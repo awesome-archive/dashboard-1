@@ -30,7 +30,7 @@ const REPLICASET_LIST_ROUTE: Route = {
   },
 };
 
-const REPLICASET_DETAIL_ROUTE: Route = {
+export const REPLICASET_DETAIL_ROUTE: Route = {
   path: ':resourceNamespace/:resourceName',
   component: ReplicaSetDetailComponent,
   data: {
@@ -40,14 +40,7 @@ const REPLICASET_DETAIL_ROUTE: Route = {
 };
 
 @NgModule({
-  imports: [
-    RouterModule.forChild([
-      REPLICASET_LIST_ROUTE,
-      REPLICASET_DETAIL_ROUTE,
-      LOGS_SCALE_DEFAULT_ACTIONBAR,
-    ]),
-  ],
+  imports: [RouterModule.forChild([REPLICASET_LIST_ROUTE, REPLICASET_DETAIL_ROUTE, LOGS_SCALE_DEFAULT_ACTIONBAR])],
   exports: [RouterModule],
 })
-export class ReplicaSetRoutingModule {
-}
+export class ReplicaSetRoutingModule {}

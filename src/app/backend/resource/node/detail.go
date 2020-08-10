@@ -15,7 +15,14 @@
 package node
 
 import (
+	"context"
 	"log"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	k8sClient "k8s.io/client-go/kubernetes"
 
 	"github.com/kubernetes/dashboard/src/app/backend/api"
 	"github.com/kubernetes/dashboard/src/app/backend/errors"
@@ -24,11 +31,6 @@ import (
 	"github.com/kubernetes/dashboard/src/app/backend/resource/dataselect"
 	"github.com/kubernetes/dashboard/src/app/backend/resource/event"
 	"github.com/kubernetes/dashboard/src/app/backend/resource/pod"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	k8sClient "k8s.io/client-go/kubernetes"
 )
 
 // NodeAllocatedResources describes node allocated resources.
@@ -126,7 +128,7 @@ func GetNodeDetail(client k8sClient.Interface, metricClient metricapi.MetricClie
 	dsQuery *dataselect.DataSelectQuery) (*NodeDetail, error) {
 	log.Printf("Getting details of %s node", name)
 
-	node, err := client.CoreV1().Nodes().Get(name, metaV1.GetOptions{})
+	node, err := client.CoreV1().Nodes().Get(context.TODO(), name, metaV1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +178,7 @@ func getNodeAllocatedResources(node v1.Node, podList *v1.PodList) (NodeAllocated
 		}
 		for podReqName, podReqValue := range podReqs {
 			if value, ok := reqs[podReqName]; !ok {
-				reqs[podReqName] = *podReqValue.Copy()
+				reqs[podReqName] = podReqValue.DeepCopy()
 			} else {
 				value.Add(podReqValue)
 				reqs[podReqName] = value
@@ -184,7 +186,7 @@ func getNodeAllocatedResources(node v1.Node, podList *v1.PodList) (NodeAllocated
 		}
 		for podLimitName, podLimitValue := range podLimits {
 			if value, ok := limits[podLimitName]; !ok {
-				limits[podLimitName] = *podLimitValue.Copy()
+				limits[podLimitName] = podLimitValue.DeepCopy()
 			} else {
 				value.Add(podLimitValue)
 				limits[podLimitName] = value
@@ -231,51 +233,60 @@ func getNodeAllocatedResources(node v1.Node, podList *v1.PodList) (NodeAllocated
 }
 
 // PodRequestsAndLimits returns a dictionary of all defined resources summed up for all
-// containers of the pod.
-func PodRequestsAndLimits(pod *v1.Pod) (reqs map[v1.ResourceName]resource.Quantity, limits map[v1.ResourceName]resource.Quantity, err error) {
-	reqs, limits = map[v1.ResourceName]resource.Quantity{}, map[v1.ResourceName]resource.Quantity{}
+// containers of the pod. If pod overhead is non-nil, the pod overhead is added to the
+// total container resource requests and to the total container limits which have a
+// non-zero quantity.
+func PodRequestsAndLimits(pod *v1.Pod) (reqs, limits v1.ResourceList, err error) {
+	reqs, limits = v1.ResourceList{}, v1.ResourceList{}
 	for _, container := range pod.Spec.Containers {
-		for name, quantity := range container.Resources.Requests {
-			if value, ok := reqs[name]; !ok {
-				reqs[name] = *quantity.Copy()
-			} else {
-				value.Add(quantity)
-				reqs[name] = value
-			}
-		}
-		for name, quantity := range container.Resources.Limits {
-			if value, ok := limits[name]; !ok {
-				limits[name] = *quantity.Copy()
-			} else {
+		addResourceList(reqs, container.Resources.Requests)
+		addResourceList(limits, container.Resources.Limits)
+	}
+	// init containers define the minimum of any resource
+	for _, container := range pod.Spec.InitContainers {
+		maxResourceList(reqs, container.Resources.Requests)
+		maxResourceList(limits, container.Resources.Limits)
+	}
+
+	// Add overhead for running a pod to the sum of requests and to non-zero limits:
+	if pod.Spec.Overhead != nil {
+		addResourceList(reqs, pod.Spec.Overhead)
+
+		for name, quantity := range pod.Spec.Overhead {
+			if value, ok := limits[name]; ok && !value.IsZero() {
 				value.Add(quantity)
 				limits[name] = value
 			}
 		}
 	}
-	// init containers define the minimum of any resource
-	for _, container := range pod.Spec.InitContainers {
-		for name, quantity := range container.Resources.Requests {
-			value, ok := reqs[name]
-			if !ok {
-				reqs[name] = *quantity.Copy()
-				continue
-			}
-			if quantity.Cmp(value) > 0 {
-				reqs[name] = *quantity.Copy()
-			}
+	return
+}
+
+// addResourceList adds the resources in newList to list
+func addResourceList(list, new v1.ResourceList) {
+	for name, quantity := range new {
+		if value, ok := list[name]; !ok {
+			list[name] = quantity.DeepCopy()
+		} else {
+			value.Add(quantity)
+			list[name] = value
 		}
-		for name, quantity := range container.Resources.Limits {
-			value, ok := limits[name]
-			if !ok {
-				limits[name] = *quantity.Copy()
-				continue
-			}
+	}
+}
+
+// maxResourceList sets list to the greater of list/newList for every resource
+// either list
+func maxResourceList(list, new v1.ResourceList) {
+	for name, quantity := range new {
+		if value, ok := list[name]; !ok {
+			list[name] = quantity.DeepCopy()
+			continue
+		} else {
 			if quantity.Cmp(value) > 0 {
-				limits[name] = *quantity.Copy()
+				list[name] = quantity.DeepCopy()
 			}
 		}
 	}
-	return
 }
 
 // GetNodePods return pods list in given named node
@@ -286,14 +297,15 @@ func GetNodePods(client k8sClient.Interface, metricClient metricapi.MetricClient
 		CumulativeMetrics: []metricapi.Metric{},
 	}
 
-	node, err := client.CoreV1().Nodes().Get(name, metaV1.GetOptions{})
+	node, err := client.CoreV1().Nodes().Get(context.TODO(), name, metaV1.GetOptions{})
 	if err != nil {
 		return &podList, err
 	}
 
 	pods, err := getNodePods(client, *node)
-	if err != nil {
-		return &podList, err
+	podNonCriticalErrors, criticalError := errors.HandleError(err)
+	if criticalError != nil {
+		return &podList, criticalError
 	}
 
 	events, err := event.GetPodsEvents(client, v1.NamespaceAll, pods.Items)
@@ -302,6 +314,7 @@ func GetNodePods(client k8sClient.Interface, metricClient metricapi.MetricClient
 		return &podList, criticalError
 	}
 
+	nonCriticalErrors = append(nonCriticalErrors, podNonCriticalErrors...)
 	podList = pod.ToPodList(pods.Items, events, nonCriticalErrors, dsQuery, metricClient)
 	return &podList, nil
 }
@@ -315,7 +328,7 @@ func getNodePods(client k8sClient.Interface, node v1.Node) (*v1.PodList, error) 
 		return nil, err
 	}
 
-	return client.CoreV1().Pods(v1.NamespaceAll).List(metaV1.ListOptions{
+	return client.CoreV1().Pods(v1.NamespaceAll).List(context.TODO(), metaV1.ListOptions{
 		FieldSelector: fieldSelector.String(),
 	})
 }

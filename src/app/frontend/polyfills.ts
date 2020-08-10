@@ -20,8 +20,6 @@
 // IE10 and IE11 requires the following for the Reflect API.
 import 'core-js/es/reflect';
 
-import 'hammerjs';
-
 // Required to support Web Animations `@angular/platform-browser/animations`:
 import 'web-animations-js';
 
@@ -30,6 +28,9 @@ import 'zone.js/dist/zone';
 
 // RxJS is required to support additional Observable methods such as map or switchMap.
 import 'rxjs/Rx';
+
+// Load `$localize` onto the global scope - used if i18n tags appear in Angular templates.
+import '@angular/localize/init';
 
 /* tslint:disable */
 // Global variable is required by some 3rd party libraries such as 'ace-ui'.

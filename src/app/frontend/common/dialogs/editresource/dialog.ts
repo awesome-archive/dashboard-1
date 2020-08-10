@@ -14,16 +14,13 @@
 
 import {HttpClient} from '@angular/common/http';
 import {Component, Inject, OnInit, ViewChild} from '@angular/core';
-import {MAT_DIALOG_DATA, MatButtonToggleGroup, MatDialogRef,} from '@angular/material';
+import {MatButtonToggleGroup} from '@angular/material/button-toggle';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {dump as toYaml, load as fromYaml} from 'js-yaml';
+import {EditorMode} from '../../components/textinput/component';
 
 import {RawResource} from '../../resources/rawresource';
 import {ResourceMeta} from '../../services/global/actionbar';
-
-enum EditorMode {
-  JSON = 'json',
-  YAML = 'yaml',
-}
 
 @Component({
   selector: 'kd-delete-resource-dialog',
@@ -37,14 +34,19 @@ export class EditResourceDialog implements OnInit {
   modes = EditorMode;
 
   constructor(
-      public dialogRef: MatDialogRef<EditResourceDialog>,
-      @Inject(MAT_DIALOG_DATA) public data: ResourceMeta, private readonly http_: HttpClient) {}
+    public dialogRef: MatDialogRef<EditResourceDialog>,
+    @Inject(MAT_DIALOG_DATA) public data: ResourceMeta,
+    private readonly http_: HttpClient,
+  ) {}
 
   ngOnInit(): void {
     const url = RawResource.getUrl(this.data.typeMeta, this.data.objectMeta);
-    this.http_.get(url).toPromise().then(response => {
-      this.text = toYaml(response);
-    });
+    this.http_
+      .get(url)
+      .toPromise()
+      .then(response => {
+        this.text = toYaml(response);
+      });
 
     this.buttonToggleGroup.valueChange.subscribe((selectedMode: EditorMode) => {
       this.selectedMode = selectedMode;

@@ -28,7 +28,7 @@ import (
 	client "k8s.io/client-go/kubernetes"
 )
 
-// JobListComponent contains a list of Jobs in the cluster.
+// JobList contains a list of Jobs in the cluster.
 type JobList struct {
 	ListMeta          api.ListMeta       `json:"listMeta"`
 	CumulativeMetrics []metricapi.Metric `json:"cumulativeMetrics"`
@@ -46,11 +46,11 @@ type JobList struct {
 type JobStatusType string
 
 const (
-	// JobRunning means the job is still running.
+	// JobStatusRunning means the job is still running.
 	JobStatusRunning JobStatusType = "Running"
-	// JobComplete means the job has completed its execution.
+	// JobStatusComplete means the job has completed its execution.
 	JobStatusComplete JobStatusType = "Complete"
-	// JobFailed means the job has failed its execution.
+	// JobStatusFailed means the job has failed its execution.
 	JobStatusFailed JobStatusType = "Failed"
 )
 
@@ -59,6 +59,8 @@ type JobStatus struct {
 	Status JobStatusType `json:"status"`
 	// A human-readable description of the status of related job.
 	Message string `json:"message"`
+	// Conditions describe the state of a job after it finishes.
+	Conditions []common.Condition `json:"conditions"`
 }
 
 // Job is a presentation layer view of Kubernetes Job resource. This means it is Job plus additional
@@ -173,7 +175,7 @@ func toJob(job *batch.Job, podInfo *common.PodInfo) Job {
 }
 
 func getJobStatus(job *batch.Job) JobStatus {
-	jobStatus := JobStatus{Status: JobStatusRunning}
+	jobStatus := JobStatus{Status: JobStatusRunning, Conditions: getJobConditions(job)}
 	for _, condition := range job.Status.Conditions {
 		if condition.Type == batch.JobComplete && condition.Status == v1.ConditionTrue {
 			jobStatus.Status = JobStatusComplete
@@ -185,4 +187,19 @@ func getJobStatus(job *batch.Job) JobStatus {
 		}
 	}
 	return jobStatus
+}
+
+func getJobConditions(job *batch.Job) []common.Condition {
+	var conditions []common.Condition
+	for _, condition := range job.Status.Conditions {
+		conditions = append(conditions, common.Condition{
+			Type:               string(condition.Type),
+			Status:             condition.Status,
+			LastProbeTime:      condition.LastProbeTime,
+			LastTransitionTime: condition.LastTransitionTime,
+			Reason:             condition.Reason,
+			Message:            condition.Message,
+		})
+	}
+	return conditions
 }

@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Ace-editor related imports
-import 'brace';
-import 'brace/mode/json';
-import 'brace/mode/yaml';
-import 'brace/theme/idle_fingers';
-import 'brace/theme/textmate';
-import 'brace/worker/json';
-
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
+import {Ace, config, edit} from 'ace-builds';
 import {ThemeService} from '../../services/global/theme';
 
 enum EditorTheme {
@@ -29,57 +32,130 @@ enum EditorTheme {
   dark = 'idle_fingers',
 }
 
+export enum EditorMode {
+  JSON = 'json',
+  YAML = 'yaml',
+}
+
 @Component({
   selector: 'kd-text-input',
   templateUrl: './template.html',
   styleUrls: ['./style.scss'],
 })
-export class TextInputComponent implements OnInit {
+export class TextInputComponent implements OnInit, AfterViewInit, OnChanges {
   @Output() textChange = new EventEmitter<string>();
   @Input() text: string;
   @Input() readOnly = false;
-  @Input() mode = 'yaml';
+  @Input() mode = EditorMode.YAML;
   @Input() prettify = true;
   @Input() border = true;
-  theme: string;
 
+  @ViewChild('editor') editorRef: ElementRef;
+
+  editor: Ace.Editor;
+  theme: string;
   // All possible options can be found at:
   // https://github.com/ajaxorg/ace/wiki/Configuring-Ace
   options = {
-    highlightActiveLine: false,
+    showPrintMargin: false,
+    highlightActiveLine: true,
     tabSize: 2,
     wrap: true,
     fontSize: 14,
-    fontFamily: `'Roboto Mono Regular', monospace`,
+    fontFamily: "'Roboto Mono Regular', monospace",
   };
 
   constructor(private readonly themeService_: ThemeService) {}
 
   ngOnInit(): void {
     this.theme = this.themeService_.isLightThemeEnabled() ? EditorTheme.light : EditorTheme.dark;
-    if (this.prettify) {
-      this.prettify_();
-    }
+  }
+
+  ngAfterViewInit(): void {
+    this.initEditor_();
   }
 
   onTextChange(text: string): void {
-    this.text = text;
-    this.textChange.emit(this.text);
+    this.textChange.emit(text);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.editor) {
+      return;
+    }
+
+    for (const propName in changes) {
+      if (changes.hasOwnProperty(propName)) {
+        switch (propName) {
+          case 'text':
+            this.onExternalUpdate_();
+            break;
+          case 'mode':
+            this.onEditorModeChange_();
+            break;
+          default:
+        }
+      }
+    }
+  }
+
+  private initEditor_(): void {
+    config.set('basePath', 'ace');
+
+    this.editor = edit(this.editorRef.nativeElement);
+    this.prettify_();
+
+    this.editor.setOptions(this.options);
+    this.editor.setValue(this.text, -1);
+    this.editor.setReadOnly(this.readOnly);
+    this.setEditorTheme_();
+    this.setEditorMode_();
+    this.editor.session.setUseWorker(false);
+    this.editor.on('change', () => this.onEditorTextChange_());
+  }
+
+  private onExternalUpdate_(): void {
+    this.prettify_();
+    const point = this.editor.getCursorPosition();
+    this.editor.setValue(this.text, -1);
+    this.editor.moveCursorToPosition(point);
+  }
+
+  private onEditorTextChange_(): void {
+    this.text = this.editor.getValue();
+    this.onTextChange(this.text);
+  }
+
+  private onEditorModeChange_(): void {
+    this.setEditorMode_();
+  }
+
+  private setEditorTheme_(): void {
+    this.editor.setTheme(`ace/theme/${this.theme}`);
+  }
+
+  private setEditorMode_(): void {
+    this.editor.session.setMode(`ace/mode/${this.mode}`);
   }
 
   private prettify_(): void {
-    switch (this.mode) {
-      case 'json':
-        if (typeof this.text === 'string') {
-          this.text = JSON.stringify(JSON.parse(this.text), null, '\t');
-        } else {
-          this.text = JSON.stringify(this.text, null, '\t');
-        }
-        break;
-      default:
-        // Do nothing when mode is not recognized.
-        break;
+    if (!this.prettify) {
+      return;
     }
-    this.onTextChange(this.text);
+
+    try {
+      switch (this.mode) {
+        case 'json':
+          this.text = JSON.stringify(JSON.parse(this.text), null, '\t');
+          // Replace \n with new lines
+          this.text = this.text.replace(new RegExp(/\\n/g), '\n\t\t');
+          break;
+        default:
+          // Do nothing when mode is not recognized.
+          break;
+      }
+    } catch (e) {
+      // Ignore any errors in case of wrong format. Formatting will not be applied.
+    }
   }
 }

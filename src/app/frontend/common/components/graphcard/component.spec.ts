@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {SimpleChange} from '@angular/core';
 import {async, ComponentFixture, TestBed} from '@angular/core/testing';
 import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {Metric} from '@api/backendapi';
 
 import {SharedModule} from '../../../shared.module';
 import {CardComponent} from '../card/component';
-import {GraphComponent} from '../graph/component';
+import {GraphComponent, GraphType} from '../graph/component';
 
 import {GraphCardComponent} from './component';
 
@@ -36,12 +35,10 @@ describe('GraphCardComponent', () => {
   let testHostFixture: ComponentFixture<GraphCardComponent>;
 
   beforeEach(async(() => {
-    TestBed
-        .configureTestingModule({
-          declarations: [GraphCardComponent, GraphComponent, CardComponent],
-          imports: [SharedModule, NoopAnimationsModule],
-        })
-        .compileComponents();
+    TestBed.configureTestingModule({
+      declarations: [GraphCardComponent, GraphComponent, CardComponent],
+      imports: [SharedModule, NoopAnimationsModule],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -63,27 +60,16 @@ describe('GraphCardComponent', () => {
     expect(component.selectedMetric).toBeUndefined();
   });
 
-  it('should return correct boolean with selectedMetric value', () => {
+  it('should show graph when metrics are provided', () => {
     const component = testHostFixture.componentInstance;
     expect(component.shouldShowGraph()).toBeFalsy();
 
-    component.selectedMetricName = 'sum';
+    component.graphTitle = 'CPU';
+    component.selectedMetricName = 'cpu/usage';
     component.selectedMetric = testMetrics[0];
+    component.graphType = GraphType.CPU;
 
     testHostFixture.detectChanges();
     expect(component.shouldShowGraph()).toBeTruthy();
-  });
-
-  it('should select correct metric from input metrics array', () => {
-    const component = testHostFixture.componentInstance;
-    component.ngOnChanges({
-      metrics: new SimpleChange(null, testMetrics, true),
-    });
-
-    testHostFixture.detectChanges();
-
-    component.selectedMetricName = testMetrics[0].metricName;
-    component.selectedMetric = testMetrics[0];
-    expect(component.selectedMetric.metricName).toBe(testMetrics[0].metricName);
   });
 });

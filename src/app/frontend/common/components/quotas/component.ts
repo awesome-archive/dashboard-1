@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {Component, Input} from '@angular/core';
-import {MatTableDataSource} from '@angular/material';
+import {MatTableDataSource} from '@angular/material/table';
 import {ResourceQuotaDetail} from 'typings/backendapi';
 
 @Component({
@@ -25,12 +25,24 @@ export class ResourceQuotaListComponent {
   @Input() quotas: ResourceQuotaDetail[];
 
   getQuotaColumns(): string[] {
-    return ['name', 'age', 'status'];
+    return ['name', 'created', 'status'];
   }
 
   getDataSource(): MatTableDataSource<ResourceQuotaDetail> {
     const tableData = new MatTableDataSource<ResourceQuotaDetail>();
     tableData.data = this.quotas;
     return tableData;
+  }
+
+  trackByResourceQuotaDetail(_: number, item: ResourceQuotaDetail): any {
+    if (item.objectMeta.uid) {
+      return `${item.objectMeta.uid}/${item.typeMeta.kind}`;
+    }
+
+    if (item.objectMeta.namespace) {
+      return `${item.objectMeta.namespace}/${item.objectMeta.name}/${item.typeMeta.kind}`;
+    }
+
+    return `${item.objectMeta.name}/${item.typeMeta.kind}`;
   }
 }

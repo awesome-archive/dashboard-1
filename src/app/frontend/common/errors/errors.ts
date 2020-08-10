@@ -35,24 +35,29 @@ export enum ErrorCode {
 }
 
 const localizedErrors: {[key: string]: string} = {
-  MSG_TOKEN_EXPIRED_ERROR: 'You have been logged out because your token have expired.',
+  MSG_TOKEN_EXPIRED_ERROR: 'You have been logged out because your token has expired.',
   MSG_ENCRYPTION_KEY_CHANGED: 'You have been logged out because your token is invalid.',
   MSG_ACCESS_DENIED: 'Access denied.',
   MSG_DASHBOARD_EXCLUSIVE_RESOURCE_ERROR: 'Trying to access/modify dashboard exclusive resource.',
+  MSG_LOGIN_UNAUTHORIZED_ERROR: 'Invalid credentials provided',
+  MSG_DEPLOY_NAMESPACE_MISMATCH_ERROR: 'Cannot deploy to the namespace different than the currently selected one.',
+  MSG_DEPLOY_EMPTY_NAMESPACE_ERROR: 'Cannot deploy the content as the target namespace is not specified.',
 };
 
 /**
  * Error returned as a part of backend api calls. All server errors should be in this format.
  */
-/* tslint:disable */
 export class K8SError implements K8SApiError {
   ErrStatus: ErrStatus;
 
+  constructor(error: ErrStatus) {
+    this.ErrStatus = error;
+  }
+
   toKdError(): KdError {
-    return new KdError(this.ErrStatus.status, this.ErrStatus.code, this.ErrStatus.message);
+    return new KdError(this.ErrStatus.reason, this.ErrStatus.code, this.ErrStatus.message);
   }
 }
-/* tslint:enable */
 
 /**
  * Frontend specific errors or errors transformed based on server response.
@@ -117,6 +122,5 @@ export function AsKdError(error: HttpErrorResponse): KdError {
 }
 
 export const ERRORS = {
-  forbidden:
-      new KdError(ErrorStatus.forbidden, ErrorCode.forbidden, localizedErrors.MSG_ACCESS_DENIED),
+  forbidden: new KdError(ErrorStatus.forbidden, ErrorCode.forbidden, localizedErrors.MSG_ACCESS_DENIED),
 };

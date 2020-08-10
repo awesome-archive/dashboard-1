@@ -16,7 +16,7 @@ import {Component, Input} from '@angular/core';
 import {Router} from '@angular/router';
 import {ObjectMeta, TypeMeta} from '@api/backendapi';
 import {ActionColumn} from '@api/frontendapi';
-import {first} from 'rxjs/operators';
+import {PinnerService} from '../../../../services/global/pinner';
 import {KdStateService} from '../../../../services/global/state';
 import {VerberService} from '../../../../services/global/verber';
 import {Resource} from '../../../../services/resource/endpoint';
@@ -30,12 +30,7 @@ const loggableResources: string[] = [
   Resource.statefulSet,
 ];
 
-const scalableResources: string[] = [
-  Resource.deployment,
-  Resource.replicaSet,
-  Resource.replicationController,
-  Resource.statefulSet,
-];
+const pinnableResources: string[] = [Resource.crdFull];
 
 const executableResources: string[] = [Resource.pod];
 
@@ -48,10 +43,15 @@ const triggerableResources: string[] = [Resource.cronJob];
 export class MenuComponent implements ActionColumn {
   @Input() objectMeta: ObjectMeta;
   @Input() typeMeta: TypeMeta;
+  @Input() displayName: string;
+  @Input() namespaced: boolean;
 
   constructor(
-      private readonly verber_: VerberService, private readonly router_: Router,
-      private readonly kdState_: KdStateService) {}
+    private readonly verber_: VerberService,
+    private readonly router_: Router,
+    private readonly kdState_: KdStateService,
+    private readonly pinner_: PinnerService,
+  ) {}
 
   setObjectMeta(objectMeta: ObjectMeta): void {
     this.objectMeta = objectMeta;
@@ -61,13 +61,20 @@ export class MenuComponent implements ActionColumn {
     this.typeMeta = typeMeta;
   }
 
+  setDisplayName(displayName: string): void {
+    this.displayName = displayName;
+  }
+
+  setNamespaced(namespaced: boolean): void {
+    this.namespaced = namespaced;
+  }
+
   isLogsEnabled(): boolean {
     return loggableResources.includes(this.typeMeta.kind);
   }
 
   getLogsHref(): string {
-    return this.kdState_.href(
-        'log', this.objectMeta.name, this.objectMeta.namespace, this.typeMeta.kind);
+    return this.kdState_.href('log', this.objectMeta.name, this.objectMeta.namespace, this.typeMeta.kind);
   }
 
   isExecEnabled(): boolean {
@@ -87,21 +94,40 @@ export class MenuComponent implements ActionColumn {
   }
 
   isScaleEnabled(): boolean {
-    return scalableResources.includes(this.typeMeta.kind);
+    return this.typeMeta.scalable;
   }
 
   onScale(): void {
-    this.verber_.onScale.pipe(first()).subscribe(() => this.router_.navigate([]));
     this.verber_.showScaleDialog(this.typeMeta.kind, this.typeMeta, this.objectMeta);
   }
 
+  isPinEnabled(): boolean {
+    return pinnableResources.includes(this.typeMeta.kind);
+  }
+
+  onPin(): void {
+    this.pinner_.pin(
+      this.typeMeta.kind,
+      this.objectMeta.name,
+      this.objectMeta.namespace,
+      this.displayName ? this.displayName : this.objectMeta.name,
+      this.namespaced,
+    );
+  }
+
+  onUnpin(): void {
+    this.pinner_.unpin(this.typeMeta.kind, this.objectMeta.name, this.objectMeta.namespace);
+  }
+
+  isPinned(): boolean {
+    return this.pinner_.isPinned(this.typeMeta.kind, this.objectMeta.name, this.objectMeta.namespace);
+  }
+
   onEdit(): void {
-    this.verber_.onEdit.pipe(first()).subscribe(() => this.router_.navigate([]));
     this.verber_.showEditDialog(this.typeMeta.kind, this.typeMeta, this.objectMeta);
   }
 
   onDelete(): void {
-    this.verber_.onDelete.pipe(first()).subscribe(() => this.router_.navigate([]));
     this.verber_.showDeleteDialog(this.typeMeta.kind, this.typeMeta, this.objectMeta);
   }
 }

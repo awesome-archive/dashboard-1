@@ -15,6 +15,8 @@
 package ingress
 
 import (
+	"context"
+
 	"github.com/kubernetes/dashboard/src/app/backend/api"
 	"github.com/kubernetes/dashboard/src/app/backend/errors"
 	"github.com/kubernetes/dashboard/src/app/backend/resource/common"
@@ -32,7 +34,7 @@ type Ingress struct {
 	Endpoints []common.Endpoint `json:"endpoints"`
 }
 
-// IngressListComponent - response structure for a queried ingress list.
+// IngressList - response structure for a queried ingress list.
 type IngressList struct {
 	api.ListMeta `json:"listMeta"`
 
@@ -46,7 +48,7 @@ type IngressList struct {
 // GetIngressList returns all ingresses in the given namespace.
 func GetIngressList(client client.Interface, namespace *common.NamespaceQuery,
 	dsQuery *dataselect.DataSelectQuery) (*IngressList, error) {
-	ingressList, err := client.ExtensionsV1beta1().Ingresses(namespace.ToRequestParam()).List(api.ListEverything)
+	ingressList, err := client.ExtensionsV1beta1().Ingresses(namespace.ToRequestParam()).List(context.TODO(), api.ListEverything)
 
 	nonCriticalErrors, criticalError := errors.HandleError(err)
 	if criticalError != nil {
@@ -60,7 +62,12 @@ func getEndpoints(ingress *extensions.Ingress) []common.Endpoint {
 	endpoints := make([]common.Endpoint, 0)
 	if len(ingress.Status.LoadBalancer.Ingress) > 0 {
 		for _, status := range ingress.Status.LoadBalancer.Ingress {
-			endpoint := common.Endpoint{Host: status.IP}
+			endpoint := common.Endpoint{}
+			if status.Hostname != "" {
+				endpoint.Host = status.Hostname
+			} else if status.IP != "" {
+				endpoint.Host = status.IP
+			}
 			endpoints = append(endpoints, endpoint)
 		}
 	}

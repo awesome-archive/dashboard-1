@@ -13,28 +13,34 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, Input} from '@angular/core';
-import {CronJob, CronJobList} from '@api/backendapi';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
+import {CronJob, CronJobList, Metric} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 import {ResourceListWithStatuses} from '../../../resources/list';
 import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-cron-job-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CronJobListComponent extends ResourceListWithStatuses<CronJobList, CronJob> {
   @Input() endpoint = EndpointManager.resource(Resource.cronJob, true).list();
+  @Input() showMetrics = false;
+  cumulativeMetrics: Metric[];
+
   constructor(
-      private readonly cronJob_: NamespacedResourceService<CronJobList>,
-      notifications: NotificationsService) {
-    super('cronjob', notifications);
-    this.id = ListIdentifiers.cronJob;
-    this.groupId = ListGroupIdentifiers.workloads;
+    private readonly cronJob_: NamespacedResourceService<CronJobList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('cronjob', notifications, cdr);
+    this.id = ListIdentifier.cronJob;
+    this.groupId = ListGroupIdentifier.workloads;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState);
@@ -52,6 +58,7 @@ export class CronJobListComponent extends ResourceListWithStatuses<CronJobList, 
   }
 
   map(cronJobList: CronJobList): CronJob[] {
+    this.cumulativeMetrics = cronJobList.cumulativeMetrics;
     return cronJobList.items;
   }
 
@@ -64,16 +71,7 @@ export class CronJobListComponent extends ResourceListWithStatuses<CronJobList, 
   }
 
   getDisplayColumns(): string[] {
-    return [
-      'statusicon',
-      'name',
-      'labels',
-      'schedule',
-      'suspend',
-      'active',
-      'lastschedule',
-      'age',
-    ];
+    return ['statusicon', 'name', 'labels', 'schedule', 'suspend', 'active', 'lastschedule', 'created'];
   }
 
   private shouldShowNamespaceColumn_(): boolean {

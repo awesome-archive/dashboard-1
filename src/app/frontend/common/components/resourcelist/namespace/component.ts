@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
 import {Namespace, NamespaceList} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 
@@ -22,21 +22,24 @@ import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {ResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-namespace-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NamespaceListComponent extends ResourceListWithStatuses<NamespaceList, Namespace> {
   @Input() endpoint = EndpointManager.resource(Resource.namespace).list();
 
   constructor(
-      private readonly namespace_: ResourceService<NamespaceList>,
-      notifications: NotificationsService) {
-    super('namespace', notifications);
-    this.id = ListIdentifiers.namespace;
-    this.groupId = ListGroupIdentifiers.cluster;
+    private readonly namespace_: ResourceService<NamespaceList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('namespace', notifications, cdr);
+    this.id = ListIdentifier.namespace;
+    this.groupId = ListGroupIdentifier.cluster;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState);
@@ -63,6 +66,6 @@ export class NamespaceListComponent extends ResourceListWithStatuses<NamespaceLi
   }
 
   getDisplayColumns(): string[] {
-    return ['statusicon', 'name', 'labels', 'phase', 'age'];
+    return ['statusicon', 'name', 'labels', 'phase', 'created'];
   }
 }

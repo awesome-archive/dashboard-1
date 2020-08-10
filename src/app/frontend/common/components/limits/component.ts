@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {Component, Input} from '@angular/core';
-import {MatTableDataSource} from '@angular/material';
+import {MatTableDataSource} from '@angular/material/table';
 import {LimitRange} from 'typings/backendapi';
 
 @Component({
@@ -32,5 +32,9 @@ export class ResourceLimitListComponent {
     const tableData = new MatTableDataSource<LimitRange>();
     tableData.data = this.limits;
     return tableData;
+  }
+
+  trackByLimitRage(_: number, item: LimitRange): any {
+    return `${item.resourceType}/${item.resourceName}`;
   }
 }

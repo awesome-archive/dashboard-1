@@ -19,7 +19,7 @@ limitations under the License.
 
 <kd-card [initialized]="isInitialized">
   <div title
-       i18n>Deployment information</div>
+       i18n>Resource information</div>
 
   <div description>
     <div class="kd-inline-property"
@@ -278,5 +278,9 @@ limitations under the License.
 <kd-replica-set-list [endpoint]="oldReplicaSetsEndpoint"
                      i18n-title
                      title="Old Replica Sets"></kd-replica-set-list>
+
+<kd-horizontal-pod-autoscaler-list [endpoint]="horizontalPodAutoscalerEndpoint"
+                                   i18n-title
+                                   title="Horizontal Pod Autoscaler"></kd-horizontal-pod-autoscaler-list>
 
 <kd-event-list [endpoint]="eventListEndpoint"></kd-event-list>

@@ -13,29 +13,34 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, ComponentFactoryResolver, Input} from '@angular/core';
-import {Deployment, DeploymentList, Event} from '@api/backendapi';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
+import {Deployment, DeploymentList, Event, Metric} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 import {ResourceListWithStatuses} from '../../../resources/list';
 import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-deployment-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeploymentListComponent extends ResourceListWithStatuses<DeploymentList, Deployment> {
   @Input() endpoint = EndpointManager.resource(Resource.deployment, true).list();
+  @Input() showMetrics = false;
+  cumulativeMetrics: Metric[];
 
   constructor(
-      private readonly deployment_: NamespacedResourceService<DeploymentList>,
-      notifications: NotificationsService, resolver: ComponentFactoryResolver) {
-    super('deployment', notifications, resolver);
-    this.id = ListIdentifiers.deployment;
-    this.groupId = ListGroupIdentifiers.workloads;
+    private readonly deployment_: NamespacedResourceService<DeploymentList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('deployment', notifications, cdr);
+    this.id = ListIdentifier.deployment;
+    this.groupId = ListGroupIdentifier.workloads;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState);
@@ -54,6 +59,7 @@ export class DeploymentListComponent extends ResourceListWithStatuses<Deployment
   }
 
   map(deploymentList: DeploymentList): Deployment[] {
+    this.cumulativeMetrics = deploymentList.cumulativeMetrics;
     return deploymentList.deployments;
   }
 
@@ -62,15 +68,22 @@ export class DeploymentListComponent extends ResourceListWithStatuses<Deployment
   }
 
   isInPendingState(resource: Deployment): boolean {
-    return resource.pods.warnings.length === 0 && resource.pods.pending > 0;
+    return (
+      resource.pods.warnings.length === 0 &&
+      (resource.pods.pending > 0 || resource.pods.running !== resource.pods.desired)
+    );
   }
 
   isInSuccessState(resource: Deployment): boolean {
-    return resource.pods.warnings.length === 0 && resource.pods.pending === 0;
+    return (
+      resource.pods.warnings.length === 0 &&
+      resource.pods.pending === 0 &&
+      resource.pods.running === resource.pods.desired
+    );
   }
 
   getDisplayColumns(): string[] {
-    return ['statusicon', 'name', 'labels', 'pods', 'age', 'images'];
+    return ['statusicon', 'name', 'labels', 'pods', 'created', 'images'];
   }
 
   hasErrors(deployment: Deployment): boolean {

@@ -19,7 +19,7 @@ limitations under the License.
 
 <kd-card [initialized]="isInitialized">
   <div title
-       i18n>Persistent Volume information</div>
+       i18n>Resource information</div>
 
   <div content
        *ngIf="isInitialized"
@@ -83,6 +83,7 @@ limitations under the License.
 
   <div content>
     <mat-table [dataSource]="getCapacityDataSource()"
+               [trackBy]="trackByCapacityItemName"
                class="kd-table-no-footer">
       <ng-container [matColumnDef]="getCapacityColumns()[0]">
         <mat-header-cell *matHeaderCellDef

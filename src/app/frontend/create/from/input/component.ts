@@ -24,14 +24,16 @@ import {NamespaceService} from '../../../common/services/global/namespace';
   styleUrls: ['./style.scss'],
 })
 export class CreateFromInputComponent {
-  inputData: string;
+  inputData = '';
 
   constructor(
-      private readonly namespace_: NamespaceService, private readonly create_: CreateService,
-      private readonly history_: HistoryService) {}
+    private readonly namespace_: NamespaceService,
+    private readonly create_: CreateService,
+    private readonly history_: HistoryService,
+  ) {}
 
   isCreateDisabled(): boolean {
-    return (!this.inputData || this.inputData.length === 0 || this.create_.isDeployDisabled());
+    return !this.inputData || this.inputData.length === 0 || this.create_.isDeployDisabled();
   }
 
   create(): void {

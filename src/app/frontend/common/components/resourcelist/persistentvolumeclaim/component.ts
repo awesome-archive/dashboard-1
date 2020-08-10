@@ -13,31 +13,36 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
 import {Observable} from 'rxjs/Observable';
-import {PersistentVolumeClaim, PersistentVolumeClaimList,} from 'typings/backendapi';
+import {PersistentVolumeClaim, PersistentVolumeClaimList} from 'typings/backendapi';
 
 import {ResourceListWithStatuses} from '../../../resources/list';
 import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-persistent-volume-claim-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PersistentVolumeClaimListComponent extends
-    ResourceListWithStatuses<PersistentVolumeClaimList, PersistentVolumeClaim> {
+export class PersistentVolumeClaimListComponent extends ResourceListWithStatuses<
+  PersistentVolumeClaimList,
+  PersistentVolumeClaim
+> {
   @Input() endpoint = EndpointManager.resource(Resource.persistentVolumeClaim, true).list();
 
   constructor(
-      private readonly persistentVolumeClaim_: NamespacedResourceService<PersistentVolumeClaimList>,
-      notifications: NotificationsService) {
-    super('persistentvolumeclaim', notifications);
-    this.id = ListIdentifiers.persistentVolumeClaim;
-    this.groupId = ListGroupIdentifiers.config;
+    private readonly persistentVolumeClaim_: NamespacedResourceService<PersistentVolumeClaimList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('persistentvolumeclaim', notifications, cdr);
+    this.id = ListIdentifier.persistentVolumeClaim;
+    this.groupId = ListGroupIdentifier.config;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInBoundState);
@@ -72,17 +77,7 @@ export class PersistentVolumeClaimListComponent extends
   }
 
   getDisplayColumns(): string[] {
-    return [
-      'statusicon',
-      'name',
-      'labels',
-      'status',
-      'volume',
-      'capacity',
-      'accmodes',
-      'storagecl',
-      'age',
-    ];
+    return ['statusicon', 'name', 'labels', 'status', 'volume', 'capacity', 'accmodes', 'storagecl', 'created'];
   }
 
   getVolumeHref(persistentVolumeName: string): string {

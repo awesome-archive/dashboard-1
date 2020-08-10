@@ -32,7 +32,6 @@ GO_COVERAGE_FILE="${ROOT_DIR}/coverage/coverage.go.txt"
 # Binaries.
 NG_BIN="${ROOT_DIR}/node_modules/.bin/ng"
 GULP_BIN="${ROOT_DIR}/node_modules/.bin/gulp"
-CLANG_FORMAT_BIN="${ROOT_DIR}/node_modules/.bin/clang-format"
 SCSSFMT_BIN="${ROOT_DIR}/node_modules/.bin/scssfmt"
 BEAUTIFY_BIN="${ROOT_DIR}/node_modules/.bin/js-beautify"
 
@@ -42,8 +41,10 @@ ARCH=$(uname | awk '{print tolower($0)}')
 # Local cluster configuration (check start-cluster.sh script for more details).
 HEAPSTER_VERSION="v1.5.4"
 HEAPSTER_PORT=8082
-KIND_VERSION="0.2.1"
+KIND_VERSION="v0.5.1"
 KIND_BIN=${CACHE_DIR}/kind-${KIND_VERSION}
+CODEGEN_VERSION="v0.18.4"
+CODEGEN_BIN=${GOPATH}/pkg/mod/k8s.io/code-generator@${CODEGEN_VERSION}/generate-groups.sh
 
 # Setup logger.
 ERROR_STYLE=`tput setaf 1`

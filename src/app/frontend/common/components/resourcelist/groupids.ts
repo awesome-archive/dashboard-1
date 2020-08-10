@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export enum ListIdentifiers {
+export enum ListIdentifier {
   clusterRole = 'clusterRoleList',
   namespace = 'namespaceList',
   node = 'nodeList',
   persistentVolume = 'persistentVolumeList',
   storageClass = 'storageClassList',
   cronJob = 'cronJobList',
+  crd = 'crdList',
+  crdObject = 'crdObjectList',
   job = 'jobList',
   deployment = 'deploymentList',
   daemonSet = 'daemonSetList',
   pod = 'podList',
+  horizontalpodautoscaler = 'horizontalPodAutoscalerList',
   replicaSet = 'replicaSetList',
   ingress = 'ingressList',
   service = 'serviceList',
+  serviceAccount = 'serviceAccountList',
+  networkPolicy = 'networkPolicyList',
   configMap = 'configMapList',
   persistentVolumeClaim = 'persistentVolumeClaimList',
   secret = 'secretList',
@@ -33,9 +38,10 @@ export enum ListIdentifiers {
   statefulSet = 'statefulSetList',
   event = 'event',
   resource = 'resource',
+  plugin = 'plugin',
 }
 
-export enum ListGroupIdentifiers {
+export enum ListGroupIdentifier {
   cluster = 'clusterGroup',
   workloads = 'workloadsGroup',
   discovery = 'discoveryGroup',

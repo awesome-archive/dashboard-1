@@ -15,6 +15,7 @@
 package sidecar
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -37,8 +38,14 @@ import (
 )
 
 func areErrorsEqual(err1, err2 error) bool {
-	return (err1 != nil && err2 != nil && err1.Error() == err2.Error()) ||
+	return (err1 != nil && err2 != nil && normalize(err1.Error()) == normalize(err2.Error())) ||
 		(err1 == nil && err2 == nil)
+}
+
+// Removes all quote signs that might have been added to the message.
+// Might depend on dependencies version how they are constructed.
+func normalize(msg string) string {
+	return strings.Replace(msg, "\"", "", -1)
 }
 
 type GlobalCounter int32
@@ -89,7 +96,7 @@ func (self FakeSidecar) ID() integrationapi.IntegrationID {
 	return "fakeSidecar"
 }
 
-func (self FakeRequest) DoRaw() ([]byte, error) {
+func (self FakeRequest) DoRaw(ctx context.Context) ([]byte, error) {
 	_NumRequests.increment()
 	log.Println("Performing req...")
 	path := self.Path
@@ -111,7 +118,7 @@ func (self FakeRequest) DoRaw() ([]byte, error) {
 
 		items := metricapi.SidecarMetricResultList{}
 		for _, pod := range requestedPods {
-			items.Items = append(items.Items, metricapi.SidecarMetric{MetricPoints: self.PodData[pod+"/"+namespace]})
+			items.Items = append(items.Items, metricapi.SidecarMetric{MetricPoints: self.PodData[pod+"/"+namespace], UIDs: []string{pod}})
 		}
 		x, err := json.Marshal(items)
 		log.Println("Got you:", string(x))
@@ -126,7 +133,7 @@ func (self FakeRequest) DoRaw() ([]byte, error) {
 		requestedNode := submatch[1]
 
 		items := metricapi.SidecarMetricResultList{}
-		items.Items = append(items.Items, metricapi.SidecarMetric{MetricPoints: self.NodeData[requestedNode]})
+		items.Items = append(items.Items, metricapi.SidecarMetric{MetricPoints: self.NodeData[requestedNode], UIDs: []string{requestedNode}})
 
 		x, err := json.Marshal(items)
 		log.Println("Got you:", string(x))
@@ -297,16 +304,16 @@ func TestDownloadMetric(t *testing.T) {
 			t.Errorf("Test Case: %s. Failed to get metrics - %s", testCase.Info, err)
 			return
 		}
-		num_req := fakeSidecarClient.GetNumberOfRequestsMade()
+		numReq := fakeSidecarClient.GetNumberOfRequestsMade()
 
 		if !reflect.DeepEqual(metrics[0].DataPoints, testCase.ExpectedDataPoints) {
 			t.Errorf("Test Case: %s. Received incorrect data points. Got %v, expected %v.",
 				testCase.Info, metrics[0].DataPoints, testCase.ExpectedDataPoints)
 		}
 
-		if testCase.ExpectedNumRequests != num_req {
+		if testCase.ExpectedNumRequests != numReq {
 			t.Errorf("Test Case: %s. Selector performed unexpected number of requests to the sidecar server. Performed %d, expected %d",
-				testCase.Info, num_req, testCase.ExpectedNumRequests)
+				testCase.Info, numReq, testCase.ExpectedNumRequests)
 		}
 	}
 }
@@ -435,10 +442,10 @@ func TestDownloadMetrics(t *testing.T) {
 			t.Errorf("Test Case: %s. Received incorrect data points. Got %v, expected %v.",
 				testCase.Info, receivedDataPoints, testCase.ExpectedDataPoints)
 		}
-		num_req := fakeSidecarClient.GetNumberOfRequestsMade()
-		if testCase.ExpectedNumRequests != num_req {
+		numReq := fakeSidecarClient.GetNumberOfRequestsMade()
+		if testCase.ExpectedNumRequests != numReq {
 			t.Errorf("Test Case: %s. Selector performed unexpected number of requests to the sidecar server. Performed %d, expected %d",
-				testCase.Info, num_req, testCase.ExpectedNumRequests)
+				testCase.Info, numReq, testCase.ExpectedNumRequests)
 		}
 	}
 }

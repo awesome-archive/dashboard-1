@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
 import {Observable} from 'rxjs/Observable';
 import {Service, ServiceList} from 'typings/backendapi';
 
@@ -22,18 +22,24 @@ import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
-@Component({selector: 'kd-service-list', templateUrl: './template.html'})
+@Component({
+  selector: 'kd-service-list',
+  templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
 export class ServiceListComponent extends ResourceListWithStatuses<ServiceList, Service> {
   @Input() endpoint = EndpointManager.resource(Resource.service, true).list();
 
   constructor(
-      private readonly service_: NamespacedResourceService<ServiceList>,
-      notifications: NotificationsService) {
-    super('service', notifications);
-    this.id = ListIdentifiers.service;
-    this.groupId = ListGroupIdentifiers.discovery;
+    private readonly service_: NamespacedResourceService<ServiceList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('service', notifications, cdr);
+    this.id = ListIdentifier.service;
+    this.groupId = ListGroupIdentifier.discovery;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState.bind(this));
@@ -55,29 +61,36 @@ export class ServiceListComponent extends ResourceListWithStatuses<ServiceList, 
   }
 
   isInPendingState(resource: Service): boolean {
-    return (
-        !resource.clusterIP ||
-        (resource.type === 'LoadBalancer' && resource.externalEndpoints.length === 0));
+    return !this.isInSuccessState(resource);
   }
 
   /**
-   * Service is in success state if cluster IP is defined and service type is LoadBalancer and
-   * external endpoints exist.
+   * Success state of a Service depends on the type of service
+   * https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+   * ClusterIP:     ClusterIP is defined
+   * NodePort:      ClusterIP is defined
+   * LoadBalancer:  ClusterIP is defined __and__ external endpoints exist
+   * ExternalName:  true
    */
   isInSuccessState(resource: Service): boolean {
-    return !this.isInPendingState(resource);
+    switch (resource.type) {
+      case 'ExternalName':
+        return true;
+      case 'LoadBalancer':
+        if (resource.externalEndpoints.length === 0) {
+          return false;
+        }
+        break;
+      case 'ClusterIP':
+      case 'NodePort':
+      default:
+        break;
+    }
+    return resource.clusterIP.length > 0;
   }
 
   getDisplayColumns(): string[] {
-    return [
-      'statusicon',
-      'name',
-      'labels',
-      'clusterip',
-      'internalendp',
-      'externalendp',
-      'age',
-    ];
+    return ['statusicon', 'name', 'labels', 'clusterip', 'internalendp', 'externalendp', 'created'];
   }
 
   private shouldShowNamespaceColumn_(): boolean {

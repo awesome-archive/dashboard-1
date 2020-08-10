@@ -41,13 +41,8 @@ const PERSISTENTVOLUMECLAIM_DETAIL_ROUTE: Route = {
 
 @NgModule({
   imports: [
-    RouterModule.forChild([
-      PERSISTENTVOLUMECLAIM_LIST_ROUTE,
-      PERSISTENTVOLUMECLAIM_DETAIL_ROUTE,
-      DEFAULT_ACTIONBAR,
-    ]),
+    RouterModule.forChild([PERSISTENTVOLUMECLAIM_LIST_ROUTE, PERSISTENTVOLUMECLAIM_DETAIL_ROUTE, DEFAULT_ACTIONBAR]),
   ],
   exports: [RouterModule],
 })
-export class PersistentVolumeClaimRoutingModule {
-}
+export class PersistentVolumeClaimRoutingModule {}

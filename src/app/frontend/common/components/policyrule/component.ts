@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {Component, Input, OnInit} from '@angular/core';
-import {MatTableDataSource} from '@angular/material';
+import {MatTableDataSource} from '@angular/material/table';
 import {PolicyRule} from 'typings/backendapi';
 
 @Component({
@@ -41,13 +41,7 @@ export class PolicyRuleListComponent implements OnInit {
   }
 
   getRuleColumns(): string[] {
-    return [
-      'resources',
-      'nonResourceURLs',
-      'resourceNames',
-      'verbs',
-      'apiGroups',
-    ];
+    return ['resources', 'nonResourceURLs', 'resourceNames', 'verbs', 'apiGroups'];
   }
 
   getDataSource(): MatTableDataSource<PolicyRule> {

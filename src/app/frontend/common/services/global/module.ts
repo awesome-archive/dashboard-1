@@ -33,6 +33,10 @@ import {KdStateService} from './state';
 import {ThemeService} from './theme';
 import {TitleService} from './title';
 import {VerberService} from './verber';
+import {PluginsConfigService} from './plugin';
+import {PluginLoaderService} from '../pluginloader/pluginloader.service';
+import {ClientPluginLoaderService} from '../pluginloader/clientloader.service';
+import {PinnerService} from './pinner';
 
 @NgModule({
   providers: [
@@ -41,6 +45,7 @@ import {VerberService} from './verber';
     LocalSettingsService,
     GlobalSettingsService,
     ConfigService,
+    PluginsConfigService,
     TitleService,
     AuthService,
     CsrfTokenService,
@@ -50,13 +55,21 @@ import {VerberService} from './verber';
     NamespaceService,
     ActionbarService,
     VerberService,
+    PinnerService,
     HistoryService,
     LogService,
     ParamsService,
     {
       provide: APP_INITIALIZER,
       useFactory: init,
-      deps: [GlobalSettingsService, LocalSettingsService, ConfigService],
+      deps: [
+        GlobalSettingsService,
+        LocalSettingsService,
+        ConfigService,
+        HistoryService,
+        PluginsConfigService,
+        PinnerService,
+      ],
       multi: true,
     },
     {
@@ -64,6 +77,7 @@ import {VerberService} from './verber';
       useClass: AuthInterceptor,
       multi: true,
     },
+    {provide: PluginLoaderService, useClass: ClientPluginLoaderService},
   ],
 })
 export class GlobalServicesModule {
@@ -74,11 +88,19 @@ export class GlobalServicesModule {
 }
 
 export function init(
-    globalSettings: GlobalSettingsService, localSettings: LocalSettingsService,
-    config: ConfigService): Function {
+  globalSettings: GlobalSettingsService,
+  localSettings: LocalSettingsService,
+  pinner: PinnerService,
+  config: ConfigService,
+  history: HistoryService,
+  pluginsConfig: PluginsConfigService,
+): Function {
   return () => {
     globalSettings.init();
     localSettings.init();
+    pluginsConfig.init();
+    pinner.init();
     config.init();
+    history.init();
   };
 }

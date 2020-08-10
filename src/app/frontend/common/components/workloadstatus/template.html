@@ -18,20 +18,21 @@ limitations under the License.
   <div title
        fxLayout="row"
        i18n>Workload Status</div>
-
   <div content
        fxLayout="row wrap">
-
     <div class="kd-graph-container"
          *ngIf="resourcesRatio.cronJobRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="cronJobs"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.cronJobRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.cronJobRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Cron Jobs</div>
@@ -41,12 +42,15 @@ limitations under the License.
          *ngIf="resourcesRatio.daemonSetRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="daemonSets"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.daemonSetRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.daemonSetRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Daemon Sets</div>
@@ -56,12 +60,15 @@ limitations under the License.
          *ngIf="resourcesRatio.deploymentRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="deployments"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.deploymentRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.deploymentRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Deployments</div>
@@ -71,12 +78,15 @@ limitations under the License.
          *ngIf="resourcesRatio.jobRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="jobs"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.jobRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.jobRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Jobs</div>
@@ -86,12 +96,16 @@ limitations under the License.
          *ngIf="resourcesRatio.podRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="pods"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.podRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.podRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false"
+                              id="kd-graph-pods">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Pods</div>
@@ -101,12 +115,15 @@ limitations under the License.
          *ngIf="resourcesRatio.replicaSetRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="replicaSets"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.replicaSetRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.replicaSetRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Replica Sets</div>
@@ -116,12 +133,15 @@ limitations under the License.
          *ngIf="resourcesRatio.replicationControllerRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="replicationControllers"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.replicationControllerRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.replicationControllerRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Replication Controllers</div>
@@ -131,16 +151,18 @@ limitations under the License.
          *ngIf="resourcesRatio.statefulSetRatio.length">
       <div fxLayout="column"
            fxLayoutAlign="center center">
-        <kd-allocation-chart id="statefulSets"
-                             [colorPalette]="colors"
-                             [data]="resourcesRatio.statefulSetRatio"
-                             type="pie"
-                             [enableTooltips]="true"
-                             [size]="140"></kd-allocation-chart>
+        <ngx-charts-pie-chart [results]="resourcesRatio.statefulSetRatio"
+                              [view]="[200,200]"
+                              [customColors]="getCustomColor"
+                              [animations]="false">
+          <ng-template #tooltipTemplate
+                       let-model="model">
+            {{model.value | number}}%
+          </ng-template>
+        </ngx-charts-pie-chart>
       </div>
       <div class="kd-graph-title"
            i18n>Stateful Sets</div>
-
     </div>
   </div>
 </kd-card>

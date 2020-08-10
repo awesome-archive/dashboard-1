@@ -1,4 +1,4 @@
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,27 +19,36 @@
 
 # golang is based on debian:jessie
 # Specify version to clarify which version we use.
-FROM golang:1.12
+FROM golang:1.13-buster
 
 # Install Node.js. Go is already installed.
 # A small tweak, apt-get update is already run by the nodejs setup script,
 # so there's no need to run it again.
-RUN curl -sL https://deb.nodesource.com/setup_11.x | bash - \
-  && apt-get install -y --no-install-recommends \
-	openjdk-8-jre \
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - \
+	&& apt-get install -y --no-install-recommends \
 	nodejs \
 	patch \
 	chromium \
 	bc \
 	sudo \
+	git \
 	gosu \
 	nano \
 	less \
+	xvfb \
+	libgtk-3-0 \
+	libgconf-2-4 \
+	bzip2 \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
 
-# Install dependencies. This will take a while.
-RUN npm install -g npm@latest gulp@4.0.2 @angular/cli@8.0.3 ngx-i18nsupport
+ENV GIT_EDITOR=nano
+
+# Install firefox from Mozilla binaries
+RUN mkdir -p /usr/local/lib/firefox
+RUN wget "https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US" -O /tmp/firefox.tar.bz2
+RUN tar -xjf /tmp/firefox.tar.bz2 -C /usr/local/lib
+RUN ln -s /usr/local/lib/firefox/firefox /usr/local/bin/firefox
 
 # Set environment variable for JavaScript tests.
 ENV CHROME_BIN=/usr/bin/chromium
@@ -66,17 +75,25 @@ RUN curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-18.0
 	rm -rf /tmp/docker/ && \
 	chmod +x /usr/bin/docker
 
+# Install kubectl
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl /usr/local/bin/kubectl
+
 # Install golangci for ckecking or fixing go format.
 # `npm ci` installs golangci, but this installation is needed
 # for running `npm run check` singlely, like
 # `aio/develop/run-npm-on-container.sh run check`.
-RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.17.1
+RUN curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.22.2
 
 # Install delve for debuging go files.
 RUN go get github.com/go-delve/delve/cmd/dlv
 
 # Enable go mod. Note(shu-mutou): do not set this before `go get`
 ENV GO111MODULE=on
+
+# Set GOPROXY to ensure download modules
+ENV GOPROXY=https://proxy.golang.org
 
 # Volume for source code
 VOLUME ["/go/src/github.com/kubernetes/dashboard"]

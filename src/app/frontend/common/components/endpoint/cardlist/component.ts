@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {Component, Input} from '@angular/core';
-import {MatTableDataSource} from '@angular/material';
+import {MatTableDataSource} from '@angular/material/table';
 import {Endpoint} from '@api/backendapi';
 
 @Component({
@@ -34,5 +34,21 @@ export class EndpointListComponent {
     tableData.data = this.endpoints;
 
     return tableData;
+  }
+
+  trackByEndpoint(index: number, item: Endpoint): any {
+    if (item.objectMeta) {
+      if (item.objectMeta.uid) {
+        return item.objectMeta.uid;
+      }
+
+      if (item.objectMeta.namespace) {
+        return `${item.objectMeta.namespace}/${item.objectMeta.name}`;
+      }
+
+      return item.objectMeta.name;
+    }
+
+    return `${item.host}/${index}`;
   }
 }

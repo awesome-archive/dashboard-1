@@ -14,9 +14,9 @@
 
 import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {Inject, Injectable} from '@angular/core';
-import {MatDialog} from '@angular/material';
+import {MatDialog} from '@angular/material/dialog';
 import {Router} from '@angular/router';
-import {AppDeploymentContentResponse, AppDeploymentContentSpec, AppDeploymentSpec,} from '@api/backendapi';
+import {AppDeploymentContentResponse, AppDeploymentContentSpec, AppDeploymentSpec} from '@api/backendapi';
 
 import {Config, CONFIG_DI_TOKEN} from '../../../index.config';
 import {AlertDialog, AlertDialogConfig} from '../../dialogs/alert/dialog';
@@ -49,12 +49,15 @@ export class CreateService {
   private isDeployInProgress_ = false;
 
   constructor(
-      private readonly http_: HttpClient, private readonly namespace_: NamespaceService,
-      private readonly csrfToken_: CsrfTokenService, private readonly matDialog_: MatDialog,
-      private readonly router_: Router, @Inject(CONFIG_DI_TOKEN) private readonly CONFIG: Config) {}
+    private readonly http_: HttpClient,
+    private readonly namespace_: NamespaceService,
+    private readonly csrfToken_: CsrfTokenService,
+    private readonly matDialog_: MatDialog,
+    private readonly router_: Router,
+    @Inject(CONFIG_DI_TOKEN) private readonly CONFIG: Config,
+  ) {}
 
-  async createContent(content: string, validate = true, name = ''):
-      Promise<AppDeploymentContentResponse> {
+  async createContent(content: string, validate = true, name = ''): Promise<AppDeploymentContentResponse> {
     const spec: AppDeploymentContentSpec = {
       name,
       namespace: this.namespace_.current(),
@@ -69,10 +72,10 @@ export class CreateService {
       const {token} = await this.csrfToken_.getTokenForAction('appdeploymentfromfile').toPromise();
       this.isDeployInProgress_ = true;
       response = await this.http_
-                     .post<AppDeploymentContentResponse>(
-                         'api/v1/appdeploymentfromfile', spec,
-                         {headers: {[this.CONFIG.csrfHeaderName]: token}})
-                     .toPromise();
+        .post<AppDeploymentContentResponse>('api/v1/appdeploymentfromfile', spec, {
+          headers: {[this.CONFIG.csrfHeaderName]: token},
+        })
+        .toPromise();
       if (response.error.length > 0) {
         this.reportError(i18n.MSG_DEPLOY_DIALOG_PARTIAL_COMPLETED, response.error);
       }
@@ -85,7 +88,9 @@ export class CreateService {
       this.reportError(i18n.MSG_DEPLOY_DIALOG_ERROR, error.error);
       throw error;
     } else {
-      this.router_.navigate(['overview']);
+      this.router_.navigate(['overview'], {
+        queryParams: {[NAMESPACE_STATE_PARAM]: this.namespace_.current()},
+      });
     }
 
     return response;
@@ -99,10 +104,10 @@ export class CreateService {
       const {token} = await this.csrfToken_.getTokenForAction('appdeployment').toPromise();
       this.isDeployInProgress_ = true;
       response = await this.http_
-                     .post<AppDeploymentContentResponse>('api/v1/appdeployment', spec, {
-                       headers: {[this.CONFIG.csrfHeaderName]: token},
-                     })
-                     .toPromise();
+        .post<AppDeploymentContentResponse>('api/v1/appdeployment', spec, {
+          headers: {[this.CONFIG.csrfHeaderName]: token},
+        })
+        .toPromise();
     } catch (err) {
       error = err;
     }

@@ -15,7 +15,7 @@
 import {Component, ElementRef, HostListener, OnInit} from '@angular/core';
 
 import {Animations} from '../../common/animations/animations';
-import {Notification, NotificationsService,} from '../../common/services/global/notifications';
+import {Notification, NotificationsService} from '../../common/services/global/notifications';
 
 @Component({
   selector: 'kd-notifications',
@@ -23,19 +23,11 @@ import {Notification, NotificationsService,} from '../../common/services/global/
   styleUrls: ['./style.scss'],
   animations: [Animations.easeOut],
 })
-export class NotificationsComponent implements OnInit {
+export class NotificationsComponent {
   isOpen_ = false;
   notifications: Notification[] = [];
 
-  constructor(
-      private readonly notifications_: NotificationsService,
-      private readonly element_: ElementRef) {}
-
-  ngOnInit(): void {
-    // this.transition_.onExit({}, () => {
-    //   this.close_();
-    // });
-  }
+  constructor(private readonly notifications_: NotificationsService, private readonly element_: ElementRef) {}
 
   @HostListener('document:click', ['$event'])
   private onOutsideClick_(event: Event): void {

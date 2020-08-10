@@ -15,19 +15,22 @@ limitations under the License.
 -->
 
 <mat-menu #actions="matMenu">
-  <div class="kd-auth-status kd-muted-light">
+  <div class="kd-auth-status kd-muted-light"
+       [ngClass]="loginStatus?.headerPresent ? 'kd-auth-header' : ''">
     <ng-container *ngIf="isLoginStatusInitialized">
       <ng-container [ngSwitch]="true">
-        <ng-container *ngSwitchCase="loginStatus.headerPresent"
+        <ng-container *ngSwitchCase="loginStatus.headerPresent && !loginStatus.impersonationPresent"
                       i18n>Logged in with auth header</ng-container>
         <ng-container *ngSwitchCase="loginStatus.tokenPresent"
                       i18n>Logged in with token</ng-container>
+        <ng-container *ngSwitchCase="loginStatus.headerPresent && loginStatus.impersonationPresent">{{loginStatus.impersonatedUser}}</ng-container>
         <ng-container *ngSwitchDefault
                       i18n>Default service account</ng-container>
       </ng-container>
+
     </ng-container>
   </div>
-  <mat-divider></mat-divider>
+  <mat-divider *ngIf="!loginStatus?.headerPresent"></mat-divider>
   <button mat-menu-item
           *ngIf="isAuthSkipped()"
           (click)="logout()"

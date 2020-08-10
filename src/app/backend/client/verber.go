@@ -15,15 +15,19 @@
 package client
 
 import (
+	"context"
 	"fmt"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	restclient "k8s.io/client-go/rest"
 
 	"github.com/kubernetes/dashboard/src/app/backend/api"
 	clientapi "github.com/kubernetes/dashboard/src/app/backend/client/api"
 	"github.com/kubernetes/dashboard/src/app/backend/errors"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	restclient "k8s.io/client-go/rest"
+	"github.com/kubernetes/dashboard/src/app/backend/resource/customresourcedefinition"
 )
 
 // resourceVerber is a struct responsible for doing common verb operations on resources, like
@@ -37,7 +41,17 @@ type resourceVerber struct {
 	autoscalingClient   RESTClient
 	storageClient       RESTClient
 	rbacClient          RESTClient
+	networkingClient    RESTClient
 	apiExtensionsClient RESTClient
+	pluginsClient       RESTClient
+	config              *restclient.Config
+}
+
+type crdInfo struct {
+	version    string
+	group      string
+	pluralName string
+	namespaced bool
 }
 
 func (verber *resourceVerber) getRESTClientByType(clientType api.ClientType) RESTClient {
@@ -56,11 +70,93 @@ func (verber *resourceVerber) getRESTClientByType(clientType api.ClientType) RES
 		return verber.storageClient
 	case api.ClientTypeRbacClient:
 		return verber.rbacClient
+	case api.ClientTypeNetworkingClient:
+		return verber.networkingClient
 	case api.ClientTypeAPIExtensionsClient:
 		return verber.apiExtensionsClient
+	case api.ClientTypePluginsClient:
+		return verber.pluginsClient
 	default:
 		return verber.client
 	}
+}
+
+func (verber *resourceVerber) getResourceSpecFromKind(kind string, namespaceSet bool) (client RESTClient, resourceSpec api.APIMapping, err error) {
+	resourceSpec, ok := api.KindToAPIMapping[kind]
+	if !ok {
+		var crdInfo crdInfo
+
+		// check if kind is CRD
+		crdInfo, err = verber.getCRDGroupAndVersion(kind)
+		if err != nil {
+			return
+		}
+
+		client, err = customresourcedefinition.NewRESTClient(verber.config, crdInfo.group, crdInfo.version)
+		if err != nil {
+			return
+		}
+
+		resourceSpec = api.APIMapping{
+			Resource:   crdInfo.pluralName,
+			Namespaced: crdInfo.namespaced,
+		}
+	}
+
+	if namespaceSet != resourceSpec.Namespaced {
+		if namespaceSet {
+			err = errors.NewInvalid(fmt.Sprintf("Set namespace for not-namespaced resource kind: %s", kind))
+			return
+		}
+		err = errors.NewInvalid(fmt.Sprintf("Set no namespace for namespaced resource kind: %s", kind))
+		return
+	}
+
+	if client == nil {
+		client = verber.getRESTClientByType(resourceSpec.ClientType)
+	}
+	return
+}
+
+func (verber *resourceVerber) getCRDGroupAndVersion(kind string) (info crdInfo, err error) {
+	var crdv1 apiextensionsv1.CustomResourceDefinition
+	var crdv1beta1 apiextensionsv1beta1.CustomResourceDefinition
+
+	err = verber.apiExtensionsClient.Get().Resource("customresourcedefinitions").Name(kind).Do(context.TODO()).Into(&crdv1)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return info, errors.NewInvalid(fmt.Sprintf("Unknown resource kind: %s", kind))
+		}
+
+		return
+	}
+
+	if len(crdv1.Spec.Versions) > 0 {
+		info.group = crdv1.Spec.Group
+		info.version = crdv1.Spec.Versions[0].Name
+		info.pluralName = crdv1.Status.AcceptedNames.Plural
+		info.namespaced = crdv1.Spec.Scope == apiextensionsv1.NamespaceScoped
+
+		return
+	}
+
+	err = verber.apiExtensionsClient.Get().Resource("customresourcedefinitions").Name(kind).Do(context.TODO()).Into(&crdv1beta1)
+	if err != nil {
+		if errors.IsNotFoundError(err) {
+			return info, errors.NewInvalid(fmt.Sprintf("Unknown resource kind: %s", kind))
+		}
+
+		return
+	}
+
+	if len(crdv1beta1.Spec.Versions) > 0 {
+		info.group = crdv1beta1.Spec.Group
+		info.version = crdv1beta1.Spec.Versions[0].Name
+		info.pluralName = crdv1beta1.Status.AcceptedNames.Plural
+		info.namespaced = crdv1beta1.Spec.Scope == apiextensionsv1beta1.NamespaceScoped
+	}
+
+	return
 }
 
 // RESTClient is an interface for REST operations used in this file.
@@ -71,29 +167,17 @@ type RESTClient interface {
 }
 
 // NewResourceVerber creates a new resource verber that uses the given client for performing operations.
-func NewResourceVerber(client, extensionsClient, appsClient,
-	batchClient, betaBatchClient, autoscalingClient, storageClient,
-	rbacClient, apiExtensionsClient RESTClient) clientapi.ResourceVerber {
+func NewResourceVerber(client, extensionsClient, appsClient, batchClient, betaBatchClient, autoscalingClient, storageClient, rbacClient, networkingClient, apiExtensionsClient, pluginsClient RESTClient, config *restclient.Config) clientapi.ResourceVerber {
 	return &resourceVerber{client, extensionsClient, appsClient,
-		batchClient, betaBatchClient, autoscalingClient, storageClient, rbacClient, apiExtensionsClient}
+		batchClient, betaBatchClient, autoscalingClient, storageClient, rbacClient, networkingClient, apiExtensionsClient, pluginsClient, config}
 }
 
 // Delete deletes the resource of the given kind in the given namespace with the given name.
 func (verber *resourceVerber) Delete(kind string, namespaceSet bool, namespace string, name string) error {
-	resourceSpec, ok := api.KindToAPIMapping[kind]
-	if !ok {
-		return errors.NewInvalid(fmt.Sprintf("Unknown resource kind: %s", kind))
+	client, resourceSpec, err := verber.getResourceSpecFromKind(kind, namespaceSet)
+	if err != nil {
+		return err
 	}
-
-	if namespaceSet != resourceSpec.Namespaced {
-		if namespaceSet {
-			return errors.NewInvalid(fmt.Sprintf("Set namespace for not-namespaced resource kind: %s", kind))
-		} else {
-			return errors.NewInvalid(fmt.Sprintf("Set no namespace for namespaced resource kind: %s", kind))
-		}
-	}
-
-	client := verber.getRESTClientByType(resourceSpec.ClientType)
 
 	// Do cascade delete by default, as this is what users typically expect.
 	defaultPropagationPolicy := v1.DeletePropagationForeground
@@ -107,27 +191,17 @@ func (verber *resourceVerber) Delete(kind string, namespaceSet bool, namespace s
 		req.Namespace(namespace)
 	}
 
-	return req.Do().Error()
+	return req.Do(context.TODO()).Error()
 }
 
 // Put puts new resource version of the given kind in the given namespace with the given name.
 func (verber *resourceVerber) Put(kind string, namespaceSet bool, namespace string, name string,
 	object *runtime.Unknown) error {
 
-	resourceSpec, ok := api.KindToAPIMapping[kind]
-	if !ok {
-		return errors.NewInvalid(fmt.Sprintf("Unknown resource kind: %s", kind))
+	client, resourceSpec, err := verber.getResourceSpecFromKind(kind, namespaceSet)
+	if err != nil {
+		return err
 	}
-
-	if namespaceSet != resourceSpec.Namespaced {
-		if namespaceSet {
-			return errors.NewInvalid(fmt.Sprintf("Set namespace for not-namespaced resource kind: %s", kind))
-		} else {
-			return errors.NewInvalid(fmt.Sprintf("Set no namespace for namespaced resource kind: %s", kind))
-		}
-	}
-
-	client := verber.getRESTClientByType(resourceSpec.ClientType)
 
 	req := client.Put().
 		Resource(resourceSpec.Resource).
@@ -139,25 +213,16 @@ func (verber *resourceVerber) Put(kind string, namespaceSet bool, namespace stri
 		req.Namespace(namespace)
 	}
 
-	return req.Do().Error()
+	return req.Do(context.TODO()).Error()
 }
 
 // Get gets the resource of the given kind in the given namespace with the given name.
 func (verber *resourceVerber) Get(kind string, namespaceSet bool, namespace string, name string) (runtime.Object, error) {
-	resourceSpec, ok := api.KindToAPIMapping[kind]
-	if !ok {
-		return nil, errors.NewInvalid(fmt.Sprintf("Unknown resource kind: %s", kind))
+	client, resourceSpec, err := verber.getResourceSpecFromKind(kind, namespaceSet)
+	if err != nil {
+		return nil, err
 	}
 
-	if namespaceSet != resourceSpec.Namespaced {
-		if namespaceSet {
-			return nil, errors.NewInvalid(fmt.Sprintf("Set namespace for not-namespaced resource kind: %s", kind))
-		} else {
-			return nil, errors.NewInvalid(fmt.Sprintf("Set no namespace for namespaced resource kind: %s", kind))
-		}
-	}
-
-	client := verber.getRESTClientByType(resourceSpec.ClientType)
 	result := &runtime.Unknown{}
 	req := client.Get().Resource(resourceSpec.Resource).Name(name).SetHeader("Accept", "application/json")
 
@@ -165,6 +230,6 @@ func (verber *resourceVerber) Get(kind string, namespaceSet bool, namespace stri
 		req.Namespace(namespace)
 	}
 
-	err := req.Do().Into(result)
+	err = req.Do(context.TODO()).Into(result)
 	return result, err
 }

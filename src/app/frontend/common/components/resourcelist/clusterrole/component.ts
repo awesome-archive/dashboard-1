@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
 import {ClusterRole, ClusterRoleList} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 
@@ -22,21 +22,24 @@ import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {ResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-cluster-role-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClusterRoleListComponent extends ResourceListBase<ClusterRoleList, ClusterRole> {
   @Input() endpoint = EndpointManager.resource(Resource.clusterRole).list();
 
   constructor(
-      private readonly clusterRole_: ResourceService<ClusterRoleList>,
-      notifications: NotificationsService) {
-    super('clusterrole', notifications);
-    this.id = ListIdentifiers.clusterRole;
-    this.groupId = ListGroupIdentifiers.cluster;
+    private readonly clusterRole_: ResourceService<ClusterRoleList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('clusterrole', notifications, cdr);
+    this.id = ListIdentifier.clusterRole;
+    this.groupId = ListGroupIdentifier.cluster;
 
     // Register action columns.
     this.registerActionColumn<MenuComponent>('menu', MenuComponent);
@@ -51,6 +54,6 @@ export class ClusterRoleListComponent extends ResourceListBase<ClusterRoleList, 
   }
 
   getDisplayColumns(): string[] {
-    return ['name', 'age'];
+    return ['name', 'created'];
   }
 }

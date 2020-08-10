@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {ResourceMeta} from '../../services/global/actionbar';
 
 @Component({
@@ -22,8 +22,9 @@ import {ResourceMeta} from '../../services/global/actionbar';
 })
 export class TriggerResourceDialog {
   constructor(
-      public dialogRef: MatDialogRef<TriggerResourceDialog>,
-      @Inject(MAT_DIALOG_DATA) public data: ResourceMeta) {}
+    public dialogRef: MatDialogRef<TriggerResourceDialog>,
+    @Inject(MAT_DIALOG_DATA) public data: ResourceMeta,
+  ) {}
 
   onNoClick(): void {
     this.dialogRef.close();

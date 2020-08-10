@@ -15,6 +15,7 @@
 package deployment
 
 import (
+	"context"
 	"log"
 
 	"github.com/kubernetes/dashboard/src/app/backend/errors"
@@ -31,6 +32,7 @@ type RollingUpdateStrategy struct {
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable"`
 }
 
+// StatusInfo is the status information of the deployment
 type StatusInfo struct {
 	// Total number of desired replicas on the deployment
 	Replicas int32 `json:"replicas"`
@@ -82,7 +84,7 @@ func GetDeploymentDetail(client client.Interface, namespace string, deploymentNa
 
 	log.Printf("Getting details of %s deployment in %s namespace", deploymentName, namespace)
 
-	deployment, err := client.AppsV1().Deployments(namespace).Get(deploymentName, metaV1.GetOptions{})
+	deployment, err := client.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metaV1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +147,7 @@ func GetDeploymentDetail(client client.Interface, namespace string, deploymentNa
 	}, nil
 }
 
+// GetStatusInfo is used to get the status information from the *apps.DeploymentStatus
 func GetStatusInfo(deploymentStatus *apps.DeploymentStatus) StatusInfo {
 	return StatusInfo{
 		Replicas:    deploymentStatus.Replicas,

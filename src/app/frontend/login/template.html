@@ -16,10 +16,6 @@ limitations under the License.
 
 <div class="kd-login-container kd-bg-background"
      fxFlex>
-  <mat-card *ngFor="let error of errors"
-            class="kd-error-container kd-bg-error kd-accent">
-    <div class="kd-error-text">{{error.status}} ({{error.code}}): {{error.message}}</div>
-  </mat-card>
   <kd-card titleClasses="kd-card-top-radius kd-bg-primary kd-accent"
            class="kd-login-card"
            [expandable]="false">
@@ -72,7 +68,6 @@ limitations under the License.
                    required
                    (change)="onChange($event)">
           </mat-form-field>
-
           <div *ngSwitchCase="loginModes.Basic"
                fxLayout="column">
             <mat-form-field fxFlex
@@ -105,6 +100,19 @@ limitations under the License.
                             i18n-label
                             (onLoad)="onChange($event)"></kd-upload-file>
           </div>
+          <mat-error *ngFor="let error of errors"
+                     class="kd-login-input kd-error kd-error-text">
+            {{error.status}} ({{error.code}}): {{error.message}}
+          </mat-error>
+          <mat-error *ngIf="!isLoginEnabled()"
+                     class="kd-login-input kd-error kd-error-text"
+                     i18n>
+            Insecure access detected. Sign in will not be available. Access Dashboard securely over HTTPS or using localhost. Read more
+            <a href="https://github.com/kubernetes/dashboard/blob/master/docs/user/accessing-dashboard/README.md#login-not-available"
+               target="_blank">
+              here
+            </a>.
+          </mat-error>
         </ng-container>
 
         <div fxFlex="none"
@@ -113,6 +121,7 @@ limitations under the License.
                   color="primary"
                   type="submit"
                   class="kd-login-button"
+                  [disabled]="!isLoginEnabled()"
                   i18n>
             Sign in
           </button>

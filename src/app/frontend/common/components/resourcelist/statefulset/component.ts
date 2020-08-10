@@ -13,30 +13,34 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, ComponentFactoryResolver, Input} from '@angular/core';
-import {Event, StatefulSet, StatefulSetList} from '@api/backendapi';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
+import {Event, Metric, StatefulSet, StatefulSetList} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 import {ResourceListWithStatuses} from '../../../resources/list';
 import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-stateful-set-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StatefulSetListComponent extends
-    ResourceListWithStatuses<StatefulSetList, StatefulSet> {
+export class StatefulSetListComponent extends ResourceListWithStatuses<StatefulSetList, StatefulSet> {
   @Input() endpoint = EndpointManager.resource(Resource.statefulSet, true).list();
+  @Input() showMetrics = false;
+  cumulativeMetrics: Metric[];
 
   constructor(
-      private readonly statefulSet_: NamespacedResourceService<StatefulSetList>,
-      resolver: ComponentFactoryResolver, notifications: NotificationsService) {
-    super('statefulset', notifications, resolver);
-    this.id = ListIdentifiers.statefulSet;
-    this.groupId = ListGroupIdentifiers.workloads;
+    private readonly statefulSet_: NamespacedResourceService<StatefulSetList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('statefulset', notifications, cdr);
+    this.id = ListIdentifier.statefulSet;
+    this.groupId = ListGroupIdentifier.workloads;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState);
@@ -55,6 +59,7 @@ export class StatefulSetListComponent extends
   }
 
   map(statefulSetList: StatefulSetList): StatefulSet[] {
+    this.cumulativeMetrics = statefulSetList.cumulativeMetrics;
     return statefulSetList.statefulSets;
   }
 
@@ -63,15 +68,22 @@ export class StatefulSetListComponent extends
   }
 
   isInPendingState(resource: StatefulSet): boolean {
-    return (resource.podInfo.warnings.length === 0 && resource.podInfo.pending > 0);
+    return (
+      resource.podInfo.warnings.length === 0 &&
+      (resource.podInfo.pending > 0 || resource.podInfo.running !== resource.podInfo.desired)
+    );
   }
 
   isInSuccessState(resource: StatefulSet): boolean {
-    return (resource.podInfo.warnings.length === 0 && resource.podInfo.pending === 0);
+    return (
+      resource.podInfo.warnings.length === 0 &&
+      resource.podInfo.pending === 0 &&
+      resource.podInfo.running === resource.podInfo.desired
+    );
   }
 
   getDisplayColumns(): string[] {
-    return ['statusicon', 'name', 'labels', 'pods', 'age', 'images'];
+    return ['statusicon', 'name', 'labels', 'pods', 'created', 'images'];
   }
 
   hasErrors(statefulSet: StatefulSet): boolean {

@@ -15,6 +15,7 @@
 package daemonset
 
 import (
+	"context"
 	"log"
 
 	metricapi "github.com/kubernetes/dashboard/src/app/backend/integration/metric/api"
@@ -24,7 +25,7 @@ import (
 	k8sClient "k8s.io/client-go/kubernetes"
 )
 
-// DaemonSeDetail represents detailed information about a Daemon Set.
+// DaemonSetDetail represents detailed information about a Daemon Set.
 type DaemonSetDetail struct {
 	// Extends list item structure.
 	DaemonSet `json:",inline"`
@@ -35,12 +36,12 @@ type DaemonSetDetail struct {
 	Errors []error `json:"errors"`
 }
 
-// Returns detailed information about the given daemon set in the given namespace.
+// GetDaemonSetDetail Returns detailed information about the given daemon set in the given namespace.
 func GetDaemonSetDetail(client k8sClient.Interface, metricClient metricapi.MetricClient,
 	namespace, name string) (*DaemonSetDetail, error) {
 
 	log.Printf("Getting details of %s daemon set in %s namespace", name, namespace)
-	daemonSet, err := client.AppsV1().DaemonSets(namespace).Get(name, metaV1.GetOptions{})
+	daemonSet, err := client.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, metaV1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

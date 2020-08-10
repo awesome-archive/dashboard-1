@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, Input} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
 import {PersistentVolume, PersistentVolumeList} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 
@@ -22,22 +22,24 @@ import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {ResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-persistent-volume-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PersistentVolumeListComponent extends
-    ResourceListWithStatuses<PersistentVolumeList, PersistentVolume> {
+export class PersistentVolumeListComponent extends ResourceListWithStatuses<PersistentVolumeList, PersistentVolume> {
   @Input() endpoint = EndpointManager.resource(Resource.persistentVolume).list();
 
   constructor(
-      private readonly pv_: ResourceService<PersistentVolumeList>,
-      notifications: NotificationsService) {
-    super('persistentvolume', notifications);
-    this.id = ListIdentifiers.persistentVolume;
-    this.groupId = ListGroupIdentifiers.cluster;
+    private readonly pv_: ResourceService<PersistentVolumeList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('persistentvolume', notifications, cdr);
+    this.id = ListIdentifier.persistentVolume;
+    this.groupId = ListGroupIdentifier.cluster;
 
     // Register action columns.
     this.registerActionColumn<MenuComponent>('menu', MenuComponent);
@@ -90,7 +92,7 @@ export class PersistentVolumeListComponent extends
       'claim',
       'storagecl',
       'reason',
-      'age',
+      'created',
     ];
   }
 }

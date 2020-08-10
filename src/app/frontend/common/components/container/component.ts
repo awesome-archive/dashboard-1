@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Component, Input} from '@angular/core';
-import {ConfigMapKeyRef, Container, EnvVar, SecretKeyRef,} from 'typings/backendapi';
+import {Component, Input, OnChanges} from '@angular/core';
+import {ConfigMapKeyRef, Container, EnvVar, SecretKeyRef} from '@api/backendapi';
 import {KdStateService} from '../../services/global/state';
 
 @Component({
@@ -21,12 +21,16 @@ import {KdStateService} from '../../services/global/state';
   templateUrl: './template.html',
   styleUrls: ['style.scss'],
 })
-export class ContainerCardComponent {
+export class ContainerCardComponent implements OnChanges {
   @Input() container: Container;
   @Input() namespace: string;
   @Input() initialized: boolean;
 
   constructor(private readonly state_: KdStateService) {}
+
+  ngOnChanges(): void {
+    this.container.env = this.container.env.sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   isSecret(envVar: EnvVar): boolean {
     return !!envVar.valueFrom && !!envVar.valueFrom.secretKeyRef;
@@ -46,5 +50,9 @@ export class ContainerCardComponent {
 
   getEnvSecretHref(secretKeyRef: SecretKeyRef): string {
     return this.state_.href('secret', secretKeyRef.name, this.namespace);
+  }
+
+  getEnvVarID(_: number, envVar: EnvVar): string {
+    return `${envVar.name}-${envVar.value}`;
   }
 }

@@ -19,7 +19,7 @@ limitations under the License.
 
 <kd-card [initialized]="isInitialized">
   <div title
-       i18n>Job information</div>
+       i18n>Resource information</div>
 
   <div description>
     <div class="kd-inline-property"
@@ -70,6 +70,9 @@ limitations under the License.
     </kd-property>
   </div>
 </kd-card>
+
+<kd-condition-list [conditions]="job?.jobStatus?.conditions"
+                   [initialized]="isInitialized"></kd-condition-list>
 
 <kd-pod-status-card [podInfo]="job?.podInfo"
                     [initialized]="isInitialized"></kd-pod-status-card>

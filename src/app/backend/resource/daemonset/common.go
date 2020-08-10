@@ -15,6 +15,8 @@
 package daemonset
 
 import (
+	"context"
+
 	"github.com/kubernetes/dashboard/src/app/backend/api"
 	metricapi "github.com/kubernetes/dashboard/src/app/backend/integration/metric/api"
 	"github.com/kubernetes/dashboard/src/app/backend/resource/common"
@@ -28,13 +30,13 @@ import (
 	client "k8s.io/client-go/kubernetes"
 )
 
-// Based on given selector returns list of services that are candidates for deletion.
+// GetServicesForDSDeletion is based on given selector returns list of services that are candidates for deletion.
 // Services are matched by daemon sets' label selector. They are deleted if given
 // label selector is targeting only 1 daemon set.
 func GetServicesForDSDeletion(client client.Interface, labelSelector labels.Selector,
 	namespace string) ([]v1.Service, error) {
 
-	daemonSet, err := client.AppsV1().DaemonSets(namespace).List(metaV1.ListOptions{
+	daemonSet, err := client.AppsV1().DaemonSets(namespace).List(context.TODO(), metaV1.ListOptions{
 		LabelSelector: labelSelector.String(),
 		FieldSelector: fields.Everything().String(),
 	})
@@ -49,7 +51,7 @@ func GetServicesForDSDeletion(client client.Interface, labelSelector labels.Sele
 		return []v1.Service{}, nil
 	}
 
-	services, err := client.CoreV1().Services(namespace).List(metaV1.ListOptions{
+	services, err := client.CoreV1().Services(namespace).List(context.TODO(), metaV1.ListOptions{
 		LabelSelector: labelSelector.String(),
 		FieldSelector: fields.Everything().String(),
 	})

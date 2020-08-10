@@ -236,7 +236,8 @@ func (self MetricPromises) GetMetrics() ([]Metric, error) {
 	for _, metricPromise := range self {
 		metric, err := metricPromise.GetMetric()
 		if err != nil {
-			return nil, err
+			// Do not fail when cannot resolve one of the metrics promises and return what can be resolved.
+			continue
 		}
 
 		if metric == nil {

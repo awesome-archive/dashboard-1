@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,11 @@ ng xi18n --outFile ../i18n/messages.new.xlf
 MD5_OLD=$(md5sum i18n/messages.xlf | cut -c -32)
 MD5_NEW=$(md5sum i18n/messages.new.xlf | cut -c -32)
 
-echo $MD5_OLD
-echo $MD5_NEW
-
 if [ $MD5_OLD != $MD5_NEW ] ; then
-  ng xi18n --outFile ../i18n/messages.xlf
-  xliffmerge
+  mv i18n/messages.new.xlf i18n/messages.xlf
+  aio/scripts/xliffmerge.sh
   echo "i18n/messages.* files are updated. Commit them too."
-  git add i18n/messages.*
+  git add i18n
 fi
 
 # Remove extracted file for check

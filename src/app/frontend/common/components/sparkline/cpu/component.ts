@@ -12,20 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ChangeDetectionStrategy, Component, Input, OnInit,} from '@angular/core';
-import {MetricResult} from '@api/backendapi';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {Sparkline} from '../sparkline';
 
 @Component({
   selector: 'kd-cpu-sparkline',
   templateUrl: './template.html',
-  styleUrls: ['style.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CpuSparklineComponent extends Sparkline implements OnInit {
-  @Input() timeseries: MetricResult[];
-
-  ngOnInit() {
-    this.setTimeseries(this.timeseries);
-  }
-}
+export class CpuSparklineComponent extends Sparkline {}

@@ -18,40 +18,27 @@ limitations under the License.
   <div class="kd-card-group-header kd-muted"
        [hidden]="!hasWorkloads()"
        i18n>Workloads</div>
-
   <div>
-    <div fxLayout="row"
-         *ngIf="showGraphs()">
-      <div class="graph-col">
-        <kd-graph-card graphTitle="CPU Usage"
-                       [metrics]="cumulativeMetrics"
-                       selectedMetricName="cpu/usage_rate"></kd-graph-card>
-      </div>
-      <div class="graph-col">
-        <kd-graph-card graphTitle="Memory Usage"
-                       [metrics]="cumulativeMetrics"
-                       selectedMetricName="memory/usage"></kd-graph-card>
-      </div>
-    </div>
+    <kd-graph-metrics [metrics]="cumulativeMetrics"></kd-graph-metrics>
 
     <kd-workload-statuses *ngIf="showWorkloadStatuses()"
                           [resourcesRatio]="resourcesRatio"></kd-workload-statuses>
 
-    <kd-cron-job-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-cron-job-list (onchange)="onListUpdate($event)"
                       [hideable]="true"></kd-cron-job-list>
-    <kd-daemon-set-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-daemon-set-list (onchange)="onListUpdate($event)"
                         [hideable]="true"></kd-daemon-set-list>
-    <kd-deployment-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-deployment-list (onchange)="onListUpdate($event)"
                         [hideable]="true"></kd-deployment-list>
-    <kd-job-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-job-list (onchange)="onListUpdate($event)"
                  [hideable]="true"></kd-job-list>
-    <kd-pod-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-pod-list (onchange)="onListUpdate($event)"
                  [hideable]="true"></kd-pod-list>
-    <kd-replica-set-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-replica-set-list (onchange)="onListUpdate($event)"
                          [hideable]="true"></kd-replica-set-list>
-    <kd-replication-controller-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-replication-controller-list (onchange)="onListUpdate($event)"
                                     [hideable]="true"></kd-replication-controller-list>
-    <kd-stateful-set-list (onchange)="onListUpdate($event); updateResourcesRatio($event)"
+    <kd-stateful-set-list (onchange)="onListUpdate($event)"
                           [hideable]="true"></kd-stateful-set-list>
   </div>
 
@@ -75,6 +62,8 @@ limitations under the License.
                                      [hideable]="true"></kd-persistent-volume-claim-list>
     <kd-secret-list (onchange)="onListUpdate($event)"
                     [hideable]="true"></kd-secret-list>
+    <kd-service-account-list (onchange)="onListUpdate($event)"
+                             [hideable]="true"></kd-service-account-list>
   </div>
 </div>
 

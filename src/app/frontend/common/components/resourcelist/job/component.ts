@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, ComponentFactoryResolver, Input} from '@angular/core';
-import {Event, Job, JobList} from '@api/backendapi';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
+import {Event, Job, JobList, Metric} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 
 import {ResourceListWithStatuses} from '../../../resources/list';
@@ -22,22 +22,27 @@ import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-job-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class JobListComponent extends ResourceListWithStatuses<JobList, Job> {
   @Input() title: string;
   @Input() endpoint = EndpointManager.resource(Resource.job, true).list();
+  @Input() showMetrics = false;
+  cumulativeMetrics: Metric[];
 
   constructor(
-      private readonly job_: NamespacedResourceService<JobList>,
-      notifications: NotificationsService, resolver: ComponentFactoryResolver) {
-    super('job', notifications, resolver);
-    this.id = ListIdentifiers.job;
-    this.groupId = ListGroupIdentifiers.workloads;
+    private readonly job_: NamespacedResourceService<JobList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('job', notifications, cdr);
+    this.id = ListIdentifier.job;
+    this.groupId = ListGroupIdentifier.workloads;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState);
@@ -56,6 +61,7 @@ export class JobListComponent extends ResourceListWithStatuses<JobList, Job> {
   }
 
   map(jobList: JobList): Job[] {
+    this.cumulativeMetrics = jobList.cumulativeMetrics;
     return jobList.jobs;
   }
 
@@ -64,15 +70,15 @@ export class JobListComponent extends ResourceListWithStatuses<JobList, Job> {
   }
 
   isInPendingState(resource: Job): boolean {
-    return (resource.podInfo.warnings.length === 0 && resource.podInfo.pending > 0);
+    return resource.podInfo.warnings.length === 0 && resource.podInfo.pending > 0;
   }
 
   isInSuccessState(resource: Job): boolean {
-    return (resource.podInfo.warnings.length === 0 && resource.podInfo.pending === 0);
+    return resource.podInfo.warnings.length === 0 && resource.podInfo.pending === 0;
   }
 
   getDisplayColumns(): string[] {
-    return ['statusicon', 'name', 'labels', 'pods', 'age', 'images'];
+    return ['statusicon', 'name', 'labels', 'pods', 'created', 'images'];
   }
 
   hasErrors(job: Job): boolean {

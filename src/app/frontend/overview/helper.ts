@@ -22,15 +22,14 @@ export enum ResourceRatioModes {
 }
 
 export class Helper {
-  static getResourceRatio(status: Status, totalItems: number, mode = ResourceRatioModes.Default):
-      RatioItem[] {
+  static getResourceRatio(status: Status, totalItems: number, mode = ResourceRatioModes.Default): RatioItem[] {
     if (totalItems === 0) {
       return [];
     }
 
     let items = [
       {
-        key: `Running: ${status.running}`,
+        name: `Running: ${status.running}`,
         value: (status.running / totalItems) * 100,
       },
     ];
@@ -38,22 +37,22 @@ export class Helper {
     switch (mode) {
       case ResourceRatioModes.Suspendable:
         items.push({
-          key: `Suspended: ${status.failed}`,
+          name: `Suspended: ${status.failed}`,
           value: (status.failed / totalItems) * 100,
         });
         break;
       case ResourceRatioModes.Completable:
         items = items.concat([
           {
-            key: `Failed: ${status.failed}`,
+            name: `Failed: ${status.failed}`,
             value: (status.failed / totalItems) * 100,
           },
           {
-            key: `Pending: ${status.pending}`,
+            name: `Pending: ${status.pending}`,
             value: (status.pending / totalItems) * 100,
           },
           {
-            key: `Succeeded: ${status.succeeded}`,
+            name: `Succeeded: ${status.succeeded}`,
             value: (status.succeeded / totalItems) * 100,
           },
         ]);
@@ -61,11 +60,11 @@ export class Helper {
       default:
         items = items.concat([
           {
-            key: `Failed: ${status.failed}`,
+            name: `Failed: ${status.failed}`,
             value: (status.failed / totalItems) * 100,
           },
           {
-            key: `Pending: ${status.pending}`,
+            name: `Pending: ${status.pending}`,
             value: (status.pending / totalItems) * 100,
           },
         ]);

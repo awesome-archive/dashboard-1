@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import {HttpParams} from '@angular/common/http';
-import {Component, ComponentFactoryResolver, Input} from '@angular/core';
-import {DaemonSet, DaemonSetList, Event} from '@api/backendapi';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Input} from '@angular/core';
+import {DaemonSet, DaemonSetList, Event, Metric} from '@api/backendapi';
 import {Observable} from 'rxjs/Observable';
 
 import {ResourceListWithStatuses} from '../../../resources/list';
@@ -22,21 +22,26 @@ import {NotificationsService} from '../../../services/global/notifications';
 import {EndpointManager, Resource} from '../../../services/resource/endpoint';
 import {NamespacedResourceService} from '../../../services/resource/resource';
 import {MenuComponent} from '../../list/column/menu/component';
-import {ListGroupIdentifiers, ListIdentifiers} from '../groupids';
+import {ListGroupIdentifier, ListIdentifier} from '../groupids';
 
 @Component({
   selector: 'kd-daemon-set-list',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DaemonSetListComponent extends ResourceListWithStatuses<DaemonSetList, DaemonSet> {
   @Input() endpoint = EndpointManager.resource(Resource.daemonSet, true).list();
+  @Input() showMetrics = false;
+  cumulativeMetrics: Metric[];
 
   constructor(
-      private readonly daemonSet_: NamespacedResourceService<DaemonSetList>,
-      resolver: ComponentFactoryResolver, notifications: NotificationsService) {
-    super('daemonset', notifications, resolver);
-    this.id = ListIdentifiers.daemonSet;
-    this.groupId = ListGroupIdentifiers.workloads;
+    private readonly daemonSet_: NamespacedResourceService<DaemonSetList>,
+    notifications: NotificationsService,
+    cdr: ChangeDetectorRef,
+  ) {
+    super('daemonset', notifications, cdr);
+    this.id = ListIdentifier.daemonSet;
+    this.groupId = ListGroupIdentifier.workloads;
 
     // Register status icon handlers
     this.registerBinding(this.icon.checkCircle, 'kd-success', this.isInSuccessState);
@@ -55,6 +60,7 @@ export class DaemonSetListComponent extends ResourceListWithStatuses<DaemonSetLi
   }
 
   map(daemonSetList: DaemonSetList): DaemonSet[] {
+    this.cumulativeMetrics = daemonSetList.cumulativeMetrics;
     return daemonSetList.daemonSets;
   }
 
@@ -63,11 +69,11 @@ export class DaemonSetListComponent extends ResourceListWithStatuses<DaemonSetLi
   }
 
   isInPendingState(resource: DaemonSet): boolean {
-    return (resource.podInfo.warnings.length === 0 && resource.podInfo.pending > 0);
+    return resource.podInfo.warnings.length === 0 && resource.podInfo.pending > 0;
   }
 
   isInSuccessState(resource: DaemonSet): boolean {
-    return (resource.podInfo.warnings.length === 0 && resource.podInfo.pending === 0);
+    return resource.podInfo.warnings.length === 0 && resource.podInfo.pending === 0;
   }
 
   hasErrors(daemonSet: DaemonSet): boolean {
@@ -79,7 +85,7 @@ export class DaemonSetListComponent extends ResourceListWithStatuses<DaemonSetLi
   }
 
   getDisplayColumns(): string[] {
-    return ['statusicon', 'name', 'labels', 'pods', 'age', 'images'];
+    return ['statusicon', 'name', 'labels', 'pods', 'created', 'images'];
   }
 
   private shouldShowNamespaceColumn_(): boolean {

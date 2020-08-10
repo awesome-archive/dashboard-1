@@ -29,21 +29,13 @@ function clean {
 }
 
 function build::frontend {
-  say "\nBuilding frontend for default locale: en"
-  mkdir -p ${FRONTEND_DIR}/en
-  ${NG_BIN} build --aot --prod --outputPath=${TMP_DIR}/frontend/en
-
-  languages=($(ls i18n | awk -F"." '{if (NF>2) print $2}'))
-  for language in "${languages[@]}"; do
-    mkdir -p ${FRONTEND_DIR}/${language}
-
-    say "Building frontend for locale: ${language}"
-    ${NG_BIN} build --aot \
-                    --prod \
-                    --i18nFile=${I18N_DIR}/messages.${language}.xlf \
-                    --i18nFormat=xlf \
-                    --i18nLocale=${language} --outputPath=${TMP_DIR}/frontend/${language}
-  done
+  say "\nBuilding localized frontend"
+  mkdir -p ${FRONTEND_DIR}
+  ${NG_BIN} build \
+            --aot \
+            --prod \
+            --localize \
+            --outputPath=${FRONTEND_DIR}
 }
 
 function build::backend {
@@ -106,7 +98,7 @@ function parse::args {
 }
 
 # Execute script.
-START=$(date +%s.%N)
+START=$(date +%s)
 
 parse::args "$@"
 clean
@@ -129,6 +121,6 @@ copy::frontend
 copy::supported-locales
 copy::dockerfile
 
-END=$(date +%s.%N)
+END=$(date +%s)
 TOOK=$(echo "${END} - ${START}" | bc)
 say "\nBuild finished successfully after ${TOOK}s"

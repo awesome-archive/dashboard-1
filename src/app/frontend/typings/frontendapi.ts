@@ -13,7 +13,8 @@
 // limitations under the License.
 
 import {Type} from '@angular/core';
-import {GlobalSettings, K8sError, ObjectMeta, ResourceList, TypeMeta,} from '@api/backendapi';
+import {GlobalSettings, K8sError, ObjectMeta, ResourceList, TypeMeta} from '@api/backendapi';
+import {ListIdentifier} from '../common/components/resourcelist/groupids';
 
 export interface BreadcrumbConfig {
   label?: string;
@@ -40,7 +41,7 @@ export interface KdError {
 }
 
 export interface OnListChangeEvent {
-  id: string;
+  id: ListIdentifier;
   groupId: string;
   items: number;
   filtered: boolean;
@@ -61,10 +62,12 @@ export interface ColumnWhenCondition {
 export interface ActionColumn {
   setTypeMeta(typeMeta: TypeMeta): void;
   setObjectMeta(objectMeta: ObjectMeta): void;
+  setDisplayName(displayName: string): void;
+  setNamespaced(namespaced: boolean): void;
 }
 
 export interface HTMLInputEvent extends Event {
-  target: HTMLInputElement&EventTarget;
+  target: HTMLInputElement & EventTarget;
 }
 
 export interface KdFile {
@@ -102,7 +105,7 @@ export interface SemverInfoOptions {
 }
 
 export interface RatioItem {
-  key: string;
+  name: string;
   value: number;
 }
 
@@ -119,4 +122,21 @@ export interface ResourcesRatio {
 
 export interface StateError {
   error: KdError;
+}
+
+export interface PluginMetadata {
+  name: string;
+  path: string;
+  dependencies: string[];
+}
+
+export interface PluginsConfig {
+  status: number;
+  plugins: PluginMetadata[];
+  errors?: object[];
+}
+
+export interface ViewportMetadata {
+  target: HTMLElement;
+  visible: boolean;
 }

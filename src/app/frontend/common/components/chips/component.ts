@@ -12,11 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Component, Input, OnInit} from '@angular/core';
-import {MatDialog, MatDialogConfig} from '@angular/material';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+} from '@angular/core';
+import {MatDialog, MatDialogConfig} from '@angular/material/dialog';
 import {StringMap} from '@api/backendapi';
 
 import {ChipDialog} from './chipdialog/dialog';
+
+// @ts-ignore
+import * as truncateUrl from 'truncate-url';
 
 export interface Chip {
   key: string;
@@ -28,29 +39,41 @@ export interface Chip {
  * https://gist.github.com/dperini/729294
  */
 const URL_REGEXP = new RegExp(
-    '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!' +
-        '(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1' +
-        ',3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])' +
-        '){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*' +
-        '[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]' +
-        '+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$',
-    'i');
+  '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!' +
+    '(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1' +
+    ',3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])' +
+    '){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*' +
+    '[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]' +
+    '+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$',
+  'i',
+);
 
-const MAX_CHIP_VALUE_LENGHT = 63;
+const MAX_CHIP_VALUE_LENGTH = 63;
 
 @Component({
   selector: 'kd-chips',
   templateUrl: './template.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChipsComponent implements OnInit {
-  @Input() map: StringMap|string[];
+export class ChipsComponent implements OnInit, OnChanges {
+  @Input() map: StringMap | string[];
   @Input() minChipsVisible = 2;
   keys: string[];
   isShowingAll = false;
 
-  constructor(private readonly dialog_: MatDialog) {}
+  constructor(private readonly dialog_: MatDialog, private readonly cdr_: ChangeDetectorRef) {}
 
   ngOnInit(): void {
+    this.processMap();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.map) {
+      this.processMap();
+    }
+  }
+
+  private processMap() {
     if (!this.map) {
       this.map = [];
     }
@@ -60,6 +83,7 @@ export class ChipsComponent implements OnInit {
     } else {
       this.keys = Object.keys(this.map);
     }
+    this.cdr_.markForCheck();
   }
 
   isVisible(index: number): boolean {
@@ -75,7 +99,11 @@ export class ChipsComponent implements OnInit {
   }
 
   isTooLong(value: string): boolean {
-    return value !== undefined && value.length > MAX_CHIP_VALUE_LENGHT;
+    return value !== undefined && value.length > MAX_CHIP_VALUE_LENGTH;
+  }
+
+  getTruncatedURL(url: string): string {
+    return truncateUrl(url, MAX_CHIP_VALUE_LENGTH);
   }
 
   isHref(value: string): boolean {
