@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+  - package-ecosystem: "gomod"
+    directory: "modules/api/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+  - package-ecosystem: "npm"
+    directory: "modules/web/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 0 # FIXME: https://github.com/kubernetes/dashboard/issues/7470

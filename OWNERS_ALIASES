@@ -1,24 +1,13 @@
-
 aliases:
   sig-ui-leads:
-    - danielromlein
     - floreks
     - maciaszczykm
-    - jeefy
+    - shu-mutou
   dashboard-maintainers:
-    - konryd
-    - ianlewis
-    - cupofcat
-    - bryk
+    - floreks
+    - jeefy
+    - maciaszczykm
+    - shu-mutou
+  dashboard-admins:
     - floreks
     - maciaszczykm
-    - rf232
-    - danielromlein
-    - pewu
-    - cheld
-    - olekzabl
-    - mhenc
-    - jeefy
-  dashboard-admins:
-    - bryk
-    - floreks
